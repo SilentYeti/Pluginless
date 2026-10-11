@@ -1,0 +1,9 @@
+.gradle/
+build/
+versions/*/build/
+versions/*/.gradle/
+versions/*/runs/
+.stonecutter-cache/
+logs/
+.idea/
+*.iml

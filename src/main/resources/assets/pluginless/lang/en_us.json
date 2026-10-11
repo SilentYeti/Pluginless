@@ -1,0 +1,14 @@
+{
+  "item.pluginless.roth_terminal": "ROTH Terminal",
+  "pluginless.terminal": "ROTH Terminal",
+  "pluginless.balance": "Balance: %s",
+  "pluginless.balance.other": "%s's balance: %s",
+  "pluginless.pay.sent": "Sent %s to %s",
+  "pluginless.pay.received": "Received %s from %s",
+  "pluginless.pay.failed": "Payment failed: not enough money, or you tried to pay yourself",
+  "pluginless.baltop.header": "Richest players",
+  "pluginless.eco.done": "%s's balance is now %s",
+  "pluginless.eco.failed": "That change is not possible for %s",
+  "pluginless.one_player": "Name exactly one player",
+  "pluginless.never_played": "%s has never played on this server"
+}

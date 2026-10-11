@@ -1,0 +1,145 @@
+package com.silentyeti.pluginless;
+
+import com.lowdragmc.lowdraglib2.gui.factory.PlayerUIMenuType;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.arguments.GameProfileArgument;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
+
+import java.util.UUID;
+
+import static net.minecraft.commands.Commands.argument;
+import static net.minecraft.commands.Commands.literal;
+
+final class Commands {
+    private static final SimpleCommandExceptionType ONE_PLAYER =
+            new SimpleCommandExceptionType(Component.translatable("pluginless.one_player"));
+
+    private static final DynamicCommandExceptionType NEVER_PLAYED =
+            new DynamicCommandExceptionType(name -> Component.translatable("pluginless.never_played", name));
+
+    static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
+        for (var name : new String[]{"balance", "bal"}) {
+            dispatcher.register(literal(name)
+                    .executes(ctx -> {
+                        var player = ctx.getSource().getPlayerOrException();
+                        var cents = Ledger.of(ctx.getSource().getServer()).balance(player.getUUID());
+                        ctx.getSource().sendSuccess(() -> Component.translatable("pluginless.balance", Config.format(cents)), false);
+                        return 1;
+                    })
+                    .then(argument("player", GameProfileArgument.gameProfile()).executes(ctx -> {
+                        var target = one(ctx);
+                        var cents = Ledger.of(ctx.getSource().getServer()).balance(target.id());
+                        ctx.getSource().sendSuccess(() -> Component.translatable("pluginless.balance.other", target.name(), Config.format(cents)), false);
+                        return 1;
+                    })));
+        }
+
+        dispatcher.register(literal("pay")
+                .then(argument("player", GameProfileArgument.gameProfile())
+                        .then(argument("amount", amount()).executes(ctx -> {
+                            var sender = ctx.getSource().getPlayerOrException();
+                            var target = one(ctx);
+                            var cents = cents(ctx);
+                            var server = ctx.getSource().getServer();
+                            if (!Ledger.of(server).transfer(sender.getUUID(), target.id(), cents)) {
+                                ctx.getSource().sendFailure(Component.translatable("pluginless.pay.failed"));
+                                return 0;
+                            }
+                            // shortcut: the server log is the transaction log, give it its own file or table when the bank lands
+                            Pluginless.LOGGER.info("pay {} -> {} {}", sender.getScoreboardName(), target.name(), Config.format(cents));
+                            ctx.getSource().sendSuccess(() -> Component.translatable("pluginless.pay.sent", Config.format(cents), target.name()), false);
+                            var receiver = server.getPlayerList().getPlayer(target.id());
+                            if (receiver != null) {
+                                receiver.sendSystemMessage(Component.translatable("pluginless.pay.received", Config.format(cents), sender.getDisplayName()));
+                            }
+                            return 1;
+                        }))));
+
+        dispatcher.register(literal("baltop").executes(ctx -> {
+            var server = ctx.getSource().getServer();
+            ctx.getSource().sendSuccess(() -> Component.translatable("pluginless.baltop.header"), false);
+            int rank = 1;
+            for (var entry : Ledger.of(server).top(10)) {
+                var line = "%d. %s  %s".formatted(rank++, name(server, entry.getKey()), Config.format(entry.getValue()));
+                ctx.getSource().sendSuccess(() -> Component.literal(line), false);
+            }
+            return 1;
+        }));
+
+        //? if >=26.1 {
+        /*var eco = literal("eco").requires(net.minecraft.commands.Commands.hasPermission(net.minecraft.commands.Commands.LEVEL_GAMEMASTERS));
+        *///?} else {
+        var eco = literal("eco").requires(source -> source.hasPermission(2));
+        //?}
+        for (var action : new String[]{"set", "add", "remove"}) {
+            eco.then(literal(action)
+                    .then(argument("player", GameProfileArgument.gameProfile())
+                            .then(argument("amount", amount()).executes(ctx -> {
+                                var target = one(ctx);
+                                var cents = cents(ctx);
+                                var accounts = Ledger.of(ctx.getSource().getServer());
+                                boolean ok = switch (action) {
+                                    case "set" -> accounts.set(target.id(), cents);
+                                    case "add" -> accounts.deposit(target.id(), cents);
+                                    default -> accounts.withdraw(target.id(), cents);
+                                };
+                                if (!ok) {
+                                    ctx.getSource().sendFailure(Component.translatable("pluginless.eco.failed", target.name()));
+                                    return 0;
+                                }
+                                Pluginless.LOGGER.info("eco {} {} {} by {}", action, target.name(), Config.format(cents), ctx.getSource().getTextName());
+                                ctx.getSource().sendSuccess(() -> Component.translatable("pluginless.eco.done", target.name(),
+                                        Config.format(accounts.balance(target.id()))), true);
+                                return 1;
+                            }))));
+        }
+        dispatcher.register(eco);
+
+        dispatcher.register(literal("roth").executes(ctx -> {
+            PlayerUIMenuType.openUI(ctx.getSource().getPlayerOrException(), Pluginless.TERMINAL_UI);
+            return 1;
+        }));
+    }
+
+    private static DoubleArgumentType amount() {
+        return DoubleArgumentType.doubleArg(0, 1e15);
+    }
+
+    private static long cents(CommandContext<CommandSourceStack> ctx) {
+        return Math.round(DoubleArgumentType.getDouble(ctx, "amount") * 100);
+    }
+
+    /** A player by name, online or not, who has an account. Hides the profile type, which changed shape after 1.21.1. */
+    private record Target(UUID id, String name) {
+    }
+
+    private static Target one(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        var profiles = GameProfileArgument.getGameProfiles(ctx, "player");
+        if (profiles.size() != 1) throw ONE_PLAYER.create();
+        var profile = profiles.iterator().next();
+        //? if >=26.1 {
+        /*var target = new Target(profile.id(), profile.name());
+        *///?} else {
+        var target = new Target(profile.getId(), profile.getName());
+        //?}
+        // A name the server has never seen still resolves to some UUID (on offline-mode servers, not even
+        // the one that player would get on joining), so money sent there would be lost.
+        if (!Ledger.of(ctx.getSource().getServer()).exists(target.id())) throw NEVER_PLAYED.create(target.name());
+        return target;
+    }
+
+    private static String name(MinecraftServer server, UUID id) {
+        //? if >=26.1 {
+        /*return server.services().nameToIdCache().get(id).map(profile -> profile.name()).orElse(id.toString());
+        *///?} else {
+        return server.getProfileCache().get(id).map(profile -> profile.getName()).orElse(id.toString());
+        //?}
+    }
+}
