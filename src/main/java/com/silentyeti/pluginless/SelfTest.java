@@ -1,7 +1,10 @@
 package com.silentyeti.pluginless;
 
 import com.mojang.authlib.GameProfile;
+import net.minecraft.commands.CommandSource;
+import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.UUIDUtil;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -86,6 +89,12 @@ final class SelfTest {
         terminal.use(alice.level(), alice, InteractionHand.MAIN_HAND);
         test.check("right-clicking the ROTH terminal opens the terminal screen", () -> alice.takeOpened() instanceof ModularUIContainerMenu);
 
+        var playerHelp = test.output(alice.createCommandSourceStack(), "pluginless");
+        test.check("/pluginless lists the commands a player can use, and hides /eco from a non-operator",
+                () -> playerHelp.contains("/pay <player> <amount>") && playerHelp.contains("/balance") && !playerHelp.contains("/eco"));
+        test.check("/pluginless help shows /eco to the console",
+                () -> test.output(server.createCommandSourceStack(), "pluginless help").contains("/eco"));
+
         // The last line is what tools/selftest.py reads.
         test.say("selftest: %d passed, %d failed".formatted(test.passed, test.failed));
         try {
@@ -123,6 +132,33 @@ final class SelfTest {
 
     private void as(ServerPlayer player, String command) {
         server.getCommands().performPrefixedCommand(player.createCommandSourceStack().withSuppressedOutput(), command);
+    }
+
+    /** Everything a command printed, as plain text. */
+    private String output(CommandSourceStack source, String command) {
+        var text = new StringBuilder();
+        server.getCommands().performPrefixedCommand(source.withSource(new CommandSource() {
+            @Override
+            public void sendSystemMessage(Component message) {
+                text.append(message.getString()).append('\n');
+            }
+
+            @Override
+            public boolean acceptsSuccess() {
+                return true;
+            }
+
+            @Override
+            public boolean acceptsFailure() {
+                return true;
+            }
+
+            @Override
+            public boolean shouldInformAdmins() {
+                return false;
+            }
+        }), command);
+        return text.toString();
     }
 
     private void check(String name, BooleanSupplier ok) {

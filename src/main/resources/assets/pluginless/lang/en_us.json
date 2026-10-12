@@ -10,5 +10,11 @@
   "pluginless.eco.done": "%s's balance is now %s",
   "pluginless.eco.failed": "That change is not possible for %s",
   "pluginless.one_player": "Name exactly one player",
+  "pluginless.help.header": "Pluginless commands",
+  "pluginless.help.balance": "Show your balance, or another player's (alias /bal)",
+  "pluginless.help.pay": "Send money to a player",
+  "pluginless.help.baltop": "List the richest players",
+  "pluginless.help.roth": "Open the ROTH terminal screen",
+  "pluginless.help.eco": "Change a player's balance",
   "pluginless.never_played": "%s has never played on this server"
 }

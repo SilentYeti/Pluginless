@@ -33,6 +33,7 @@ Early. The foundation is in place and the modules are built on top of it one at 
 | `/pay <player> <amount>` | Everyone | Sends money to a player, online or not |
 | `/baltop` | Everyone | Lists the ten richest players |
 | `/roth` | Everyone | Opens the terminal screen without the item |
+| `/pluginless`, `/pluginless help` | Everyone | Lists the Pluginless commands you are allowed to use |
 | `/eco set\|add\|remove <player> <amount>` | Operators | Changes a balance directly |
 
 A player gets an account the first time they join. Commands that name a player refuse anyone who has

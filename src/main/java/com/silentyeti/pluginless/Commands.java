@@ -7,6 +7,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
+import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.arguments.GameProfileArgument;
 import net.minecraft.network.chat.Component;
@@ -24,7 +25,14 @@ final class Commands {
     private static final DynamicCommandExceptionType NEVER_PLAYED =
             new DynamicCommandExceptionType(name -> Component.translatable("pluginless.never_played", name));
 
+    /** What /pluginless lists, in this order. Add every new root command here and a pluginless.help.<name> line to the lang file. */
+    private static final String[] LISTED = {"balance", "pay", "baltop", "roth", "eco"};
+
     static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
+        dispatcher.register(literal("pluginless")
+                .executes(ctx -> help(dispatcher, ctx.getSource()))
+                .then(literal("help").executes(ctx -> help(dispatcher, ctx.getSource()))));
+
         for (var name : new String[]{"balance", "bal"}) {
             dispatcher.register(literal(name)
                     .executes(ctx -> {
@@ -106,6 +114,23 @@ final class Commands {
             PlayerUIMenuType.openUI(ctx.getSource().getPlayerOrException(), Pluginless.TERMINAL_UI);
             return 1;
         }));
+    }
+
+    /** Like vanilla /help, but only our commands, and only the ones this sender may use. */
+    private static int help(CommandDispatcher<CommandSourceStack> dispatcher, CommandSourceStack source) {
+        source.sendSuccess(() -> Component.translatable("pluginless.help.header").withStyle(ChatFormatting.GOLD), false);
+        int shown = 0;
+        for (var name : LISTED) {
+            var node = dispatcher.getRoot().getChild(name);
+            if (node == null || !node.canUse(source)) continue;
+            var usage = String.join(" | ", dispatcher.getSmartUsage(node, source).values());
+            var line = Component.literal(("/" + name + " " + usage).trim()).withStyle(ChatFormatting.YELLOW)
+                    .append(Component.literal(" - ").withStyle(ChatFormatting.GRAY))
+                    .append(Component.translatable("pluginless.help." + name).withStyle(ChatFormatting.WHITE));
+            source.sendSuccess(() -> line, false);
+            shown++;
+        }
+        return shown;
     }
 
     private static DoubleArgumentType amount() {
