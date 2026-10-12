@@ -15,6 +15,13 @@
   "pluginless.help.pay": "Send money to a player",
   "pluginless.help.baltop": "List the richest players",
   "pluginless.help.roth": "Open the ROTH terminal screen",
+  "pluginless.help.rank": "Show your rank; operators set ranks and reload ranks.json",
   "pluginless.help.eco": "Change a player's balance",
+  "pluginless.rank.own": "Your rank: %s",
+  "pluginless.rank.list": "Ranks: %s",
+  "pluginless.rank.set": "%s now has the rank %s",
+  "pluginless.rank.unknown": "There is no rank named %s",
+  "pluginless.rank.reload.done": "Reloaded ranks.json",
+  "pluginless.rank.reload.failed": "ranks.json was not loaded, the old ranks stay in force: %s",
   "pluginless.never_played": "%s has never played on this server"
 }

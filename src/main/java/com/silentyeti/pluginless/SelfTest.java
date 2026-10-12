@@ -13,6 +13,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.common.util.FakePlayer;
 import com.lowdragmc.lowdraglib2.gui.holder.ModularUIContainerMenu;
 
@@ -95,6 +96,8 @@ final class SelfTest {
         test.check("/pluginless help shows /eco to the console",
                 () -> test.output(server.createCommandSourceStack(), "pluginless help").contains("/eco"));
 
+        test.ranks(alice, accounts);
+
         // The last line is what tools/selftest.py reads.
         test.say("selftest: %d passed, %d failed".formatted(test.passed, test.failed));
         try {
@@ -103,6 +106,57 @@ final class SelfTest {
             Pluginless.LOGGER.error("could not write selftest-result.txt", e);
         }
         server.halt(false);
+    }
+
+    private void ranks(Tester alice, Accounts accounts) {
+        var a = alice.getUUID();
+        var console = server.createCommandSourceStack().withSuppressedOutput();
+        check("ranks.json is created with the built-in ranks", () -> RankGate.ranks.ranks.containsKey("admin")
+                && Files.exists(FMLPaths.CONFIGDIR.get().resolve("pluginless/ranks.json")));
+
+        var configured = RankGate.ranks;
+        var ranks = new Ranks();
+        var normal = new Ranks.Rank();
+        normal.deny = List.of("baltop");
+        ranks.ranks.put("default", normal);
+        var teller = new Ranks.Rank();
+        teller.inherits = "default";
+        teller.prefix = "&a[Teller] ";
+        teller.allow = List.of("eco");
+        teller.deny = List.of("eco set");
+        ranks.ranks.put("teller", teller);
+        RankGate.ranks = ranks;
+        try {
+            check("a rank can deny a command the game allows",
+                    () -> !output(alice.createCommandSourceStack(), "baltop").contains("Richest"));
+
+            server.getCommands().performPrefixedCommand(console, "rank set selftest_alice teller");
+            check("/rank set gives a player a rank", () -> RankGate.rankOf(server, a).equals("teller"));
+
+            long before = accounts.balance(a);
+            as(alice, "eco add selftest_alice 5");
+            check("a rank can allow an operator command", () -> accounts.balance(a) == before + 5_00);
+
+            as(alice, "eco set selftest_alice 0");
+            check("a rank can deny one subcommand of a command it allows", () -> accounts.balance(a) == before + 5_00);
+
+            check("a rank inherits the rules of the rank below it",
+                    () -> !output(alice.createCommandSourceStack(), "baltop").contains("Richest"));
+
+            as(alice, "rank set selftest_alice default");
+            check("/rank set is refused for a non-operator", () -> RankGate.rankOf(server, a).equals("teller"));
+
+            check("/pluginless lists a command once a rank allows it",
+                    () -> output(alice.createCommandSourceStack(), "pluginless").contains("/eco"));
+
+            check("the rank prefix is put before the player's name",
+                    () -> RankGate.withPrefix(alice, alice.getName()).getString().equals("\u00a7a[Teller] selftest_alice"));
+
+            server.getCommands().performPrefixedCommand(console, "rank set selftest_alice nonsense");
+            check("/rank set refuses a rank that does not exist", () -> RankGate.rankOf(server, a).equals("teller"));
+        } finally {
+            RankGate.ranks = configured;
+        }
     }
 
     private Tester player(String name) {

@@ -1,17 +1,17 @@
 package com.silentyeti.pluginless;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 /** Balances in cents. Plain Java so the money rules can be unit-tested without Minecraft. */
 public final class Accounts {
-    final Map<UUID, Long> balances = new HashMap<>();
+    private final Map<UUID, Long> balances;
     private final long startBalance;
     private final Runnable onChange;
 
-    public Accounts(long startBalance, Runnable onChange) {
+    public Accounts(Map<UUID, Long> balances, long startBalance, Runnable onChange) {
+        this.balances = balances;
         this.startBalance = startBalance;
         this.onChange = onChange;
     }

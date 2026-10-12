@@ -4,13 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.HashMap;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 class AccountsTest {
     private final UUID a = UUID.randomUUID();
     private final UUID b = UUID.randomUUID();
-    private final Accounts accounts = new Accounts(100, () -> {});
+    private final Accounts accounts = new Accounts(new HashMap<>(), 100, () -> {});
 
     @Test
     void newAccountStartsAtStartBalance() {

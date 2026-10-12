@@ -3,17 +3,20 @@ package com.silentyeti.pluginless;
 import com.lowdragmc.lowdraglib2.gui.factory.PlayerUIMenuType;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.GameProfileArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 
 import java.util.UUID;
+import java.util.function.Predicate;
 
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
@@ -26,7 +29,7 @@ final class Commands {
             new DynamicCommandExceptionType(name -> Component.translatable("pluginless.never_played", name));
 
     /** What /pluginless lists, in this order. Add every new root command here and a pluginless.help.<name> line to the lang file. */
-    private static final String[] LISTED = {"balance", "pay", "baltop", "roth", "eco"};
+    private static final String[] LISTED = {"balance", "pay", "baltop", "roth", "rank", "eco"};
 
     static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(literal("pluginless")
@@ -81,11 +84,7 @@ final class Commands {
             return 1;
         }));
 
-        //? if >=26.1 {
-        /*var eco = literal("eco").requires(net.minecraft.commands.Commands.hasPermission(net.minecraft.commands.Commands.LEVEL_GAMEMASTERS));
-        *///?} else {
-        var eco = literal("eco").requires(source -> source.hasPermission(2));
-        //?}
+        var eco = literal("eco").requires(operator());
         for (var action : new String[]{"set", "add", "remove"}) {
             eco.then(literal(action)
                     .then(argument("player", GameProfileArgument.gameProfile())
@@ -110,6 +109,45 @@ final class Commands {
         }
         dispatcher.register(eco);
 
+        dispatcher.register(literal("rank")
+                .executes(ctx -> {
+                    var player = ctx.getSource().getPlayerOrException();
+                    var rank = RankGate.rankOf(ctx.getSource().getServer(), player.getUUID());
+                    ctx.getSource().sendSuccess(() -> Component.translatable("pluginless.rank.own", rank), false);
+                    return 1;
+                })
+                .then(literal("list").executes(ctx -> {
+                    var names = String.join(", ", RankGate.ranks.ranks.keySet());
+                    ctx.getSource().sendSuccess(() -> Component.translatable("pluginless.rank.list", names), false);
+                    return 1;
+                }))
+                .then(literal("set").requires(operator())
+                        .then(argument("player", GameProfileArgument.gameProfile())
+                                .then(argument("rank", StringArgumentType.word())
+                                        .suggests((ctx, builder) -> SharedSuggestionProvider.suggest(RankGate.ranks.ranks.keySet(), builder))
+                                        .executes(ctx -> {
+                                            var target = one(ctx);
+                                            var rank = StringArgumentType.getString(ctx, "rank");
+                                            if (!RankGate.ranks.ranks.containsKey(rank)) {
+                                                ctx.getSource().sendFailure(Component.translatable("pluginless.rank.unknown", rank));
+                                                return 0;
+                                            }
+                                            RankGate.setRank(ctx.getSource().getServer(), target.id(), rank);
+                                            Pluginless.LOGGER.info("rank {} -> {} by {}", target.name(), rank, ctx.getSource().getTextName());
+                                            ctx.getSource().sendSuccess(() -> Component.translatable("pluginless.rank.set", target.name(), rank), true);
+                                            return 1;
+                                        }))))
+                .then(literal("reload").requires(operator()).executes(ctx -> {
+                    var problem = RankGate.load();
+                    if (problem != null) {
+                        ctx.getSource().sendFailure(Component.translatable("pluginless.rank.reload.failed", problem));
+                        return 0;
+                    }
+                    ctx.getSource().getServer().getPlayerList().getPlayers().forEach(RankGate::refresh);
+                    ctx.getSource().sendSuccess(() -> Component.translatable("pluginless.rank.reload.done"), true);
+                    return 1;
+                })));
+
         dispatcher.register(literal("roth").executes(ctx -> {
             PlayerUIMenuType.openUI(ctx.getSource().getPlayerOrException(), Pluginless.TERMINAL_UI);
             return 1;
@@ -131,6 +169,14 @@ final class Commands {
             shown++;
         }
         return shown;
+    }
+
+    private static Predicate<CommandSourceStack> operator() {
+        //? if >=26.1 {
+        /*return net.minecraft.commands.Commands.hasPermission(net.minecraft.commands.Commands.LEVEL_GAMEMASTERS);
+        *///?} else {
+        return source -> source.hasPermission(2);
+        //?}
     }
 
     private static DoubleArgumentType amount() {

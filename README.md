@@ -17,7 +17,8 @@ Early. The foundation is in place and the modules are built on top of it one at 
 | --- | --- |
 | Money ledger, `/balance`, `/pay`, `/baltop`, `/eco` | Working |
 | ROTH terminal and `/roth` (home screen, shows your balance) | Working |
-| Ranks and per-rank command permissions | Planned |
+| Ranks: per-rank command permissions, inheritance, name prefixes | Working |
+| Rank GUI, promotion tracks, timed ranks, per-rank limits | Planned |
 | Bank (interest, loans, account tiers) | Planned |
 | Auction house and buy/sell orders | Planned |
 | Player and server shops | Planned |
@@ -34,6 +35,9 @@ Early. The foundation is in place and the modules are built on top of it one at 
 | `/baltop` | Everyone | Lists the ten richest players |
 | `/roth` | Everyone | Opens the terminal screen without the item |
 | `/pluginless`, `/pluginless help` | Everyone | Lists the Pluginless commands you are allowed to use |
+| `/rank`, `/rank list` | Everyone | Shows your rank, or the names of all ranks |
+| `/rank set <player> <rank>` | Operators | Gives a player a rank |
+| `/rank reload` | Operators | Re-reads `ranks.json` without a restart |
 | `/eco set\|add\|remove <player> <amount>` | Operators | Changes a balance directly |
 
 A player gets an account the first time they join. Commands that name a player refuse anyone who has
@@ -48,7 +52,41 @@ never joined, so money cannot be sent to an account nobody owns.
 | `currencySymbol` | `$` | Shown in front of every amount |
 | `startBalance` | `100.0` | Balance of a player's new account |
 
-Balances are stored in the world save.
+Balances and rank assignments are stored in the world save.
+
+## Ranks
+
+Ranks live in `config/pluginless/ranks.json`, created on first start:
+
+```json
+{
+  "defaultRank": "default",
+  "ranks": {
+    "default": { "prefix": "", "allow": [], "deny": [] },
+    "moderator": {
+      "inherits": "default",
+      "prefix": "&9[Mod] ",
+      "allow": ["kick", "ban", "pardon", "tp", "teleport"],
+      "deny": []
+    },
+    "admin": { "inherits": "moderator", "prefix": "&c[Admin] ", "allow": ["*"], "deny": [] }
+  }
+}
+```
+
+- **`allow`** lets a rank use commands the game would refuse, such as operator commands.
+- **`deny`** takes away commands the game would allow.
+- Anything a rank has no rule for behaves as it does without Pluginless.
+- This works for every command on the server, from Minecraft or from any mod.
+
+A command is named by its words without arguments: `pay`, `eco set`, `team modify`. An entry can also
+end in `*` (`eco*`), or be `*` for everything. The most specific entry wins, and a deny beats an allow
+of the same specificity. So `"deny": ["*"], "allow": ["pay", "balance"]` is a whitelist, and
+`"allow": ["eco"], "deny": ["eco set"]` gives `/eco` without `/eco set`.
+
+A rank with `inherits` falls back to that rank wherever it has no rule of its own. Operators are never
+restricted by ranks, so a mistake in the file cannot lock everyone out. If the file is broken,
+`/rank reload` says what is wrong and the previous ranks stay in force.
 
 ## Supported versions
 

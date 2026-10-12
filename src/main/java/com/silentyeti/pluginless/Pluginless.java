@@ -4,6 +4,8 @@ import com.lowdragmc.lowdraglib2.gui.factory.PlayerUIMenuType;
 import com.mojang.logging.LogUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTabs;
+import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
@@ -42,6 +44,16 @@ public final class Pluginless {
             if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) event.accept(ROTH_TERMINAL);
         });
         NeoForge.EVENT_BUS.addListener((RegisterCommandsEvent event) -> Commands.register(event.getDispatcher()));
+        // LOWEST: the rank rules must wrap the commands of every mod, so this runs after they registered.
+        NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, (RegisterCommandsEvent event) -> RankGate.install(event.getDispatcher()));
+        var problem = RankGate.load();
+        if (problem != null) LOGGER.error("ranks.json was not loaded, using the built-in ranks: {}", problem);
+        NeoForge.EVENT_BUS.addListener((PlayerEvent.NameFormat event) -> {
+            if (event.getEntity() instanceof ServerPlayer player) event.setDisplayname(RankGate.withPrefix(player, event.getDisplayname()));
+        });
+        NeoForge.EVENT_BUS.addListener((PlayerEvent.TabListNameFormat event) -> {
+            if (event.getEntity() instanceof ServerPlayer player) event.setDisplayName(RankGate.withPrefix(player, player.getName()));
+        });
         NeoForge.EVENT_BUS.addListener((PlayerEvent.PlayerLoggedInEvent event) -> {
             var server = event.getEntity().level().getServer();
             if (server != null) Ledger.of(server).open(event.getEntity().getUUID());
