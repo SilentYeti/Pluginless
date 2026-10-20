@@ -12,6 +12,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import com.mojang.serialization.JsonOps;
 import com.google.gson.Gson;
+import java.util.HashMap;
 import java.util.Map;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.server.level.ServerLevel;
@@ -762,6 +763,25 @@ final class SelfTest {
             });
             var file = FMLPaths.CONFIGDIR.get().resolve("pluginless/stocks.json");
             check("stocks.json is created with valid defaults", () -> Files.exists(file) && Stocks.defaults().problem() == null);
+
+            // Margin: alice still holds 100 TEST; the sell quote is the price less the spread.
+            state.price = 20; saved.paid = 0; accounts.set(a, 5_000_00); long worth = Stocks.quote(stock, state, false) * 100;
+            as(alice, "margin borrow " + (worth / 2 / 100 + 1));
+            check("a margin loan above half the holdings is refused", () -> Margin.loan(server, a) == 0 && accounts.balance(a) == 5_000_00);
+            as(alice, "margin borrow 900");
+            check("margin lends up to the multiple, paid by the server", () -> Margin.loan(server, a) == 900_00 && accounts.balance(a) == 5_900_00);
+            as(alice, "stock sell TEST 100");
+            check("stocks backing a margin loan cannot be sold away", () -> StockExchange.held(server, a, "TEST") == 100);
+            state.price = 10.5; Margin.tick(server, System.currentTimeMillis());
+            check("a warning does not sell anything", () -> StockExchange.held(server, a, "TEST") == 100 && Margin.loan(server, a) == 900_00);
+            state.price = 9; Margin.tick(server, System.currentTimeMillis()); long proceeds = Stocks.quote(stock, state, false) * 100;
+            check("below the liquidation ratio everything is sold and the shortfall becomes bank debt", () -> StockExchange.held(server, a, "TEST") == 0
+                    && Margin.loan(server, a) == 0 && Bank.debt(server, a) == 900_00 - proceeds && accounts.balance(a) == 5_900_00);
+            as(alice, "margin borrow 1"); check("a debtor cannot borrow on margin", () -> Margin.loan(server, a) == 0);
+            Bank.repay(server, a, 1_000_00); StockExchange.store(server).value.holdings.computeIfAbsent(a, key -> new HashMap<>()).put("TEST", 100L);
+            state.price = 20; as(alice, "margin borrow 900"); state.price = 9.9; long cash = accounts.balance(a);
+            Margin.tick(server, System.currentTimeMillis()); long sold = Stocks.quote(stock, state, false) * 100;
+            check("a forced sale that covers the loan pays the rest to the player", () -> Margin.loan(server, a) == 0 && Bank.debt(server, a) == 0 && accounts.balance(a) == cash + sold - 900_00);
         } finally {
             StockExchange.config = configured;
             StockExchange.store(server).value.holdings.remove(a);

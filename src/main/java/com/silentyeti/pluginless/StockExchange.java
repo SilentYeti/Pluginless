@@ -103,6 +103,36 @@ final class StockExchange {
         return store(server).value.holdings.getOrDefault(player, Map.of()).getOrDefault(ticker, 0L);
     }
 
+    /** What the player's holdings would fetch at today's sell quotes, without moving any price. */
+    static long value(MinecraftServer server, UUID player) {
+        long total = 0;
+        for (var holding : store(server).value.holdings.getOrDefault(player, Map.of()).entrySet()) {
+            var stock = config.stocks.get(holding.getKey());
+            if (stock != null) total += Stocks.quote(stock, state(server, holding.getKey()), false) * holding.getValue();
+        }
+        return total;
+    }
+
+    /** Sells every unhalted holding at once for a forced sale; each lot moves its price like a normal sale. Returns the proceeds, paid to nobody. */
+    static long sellAll(MinecraftServer server, UUID player) {
+        var store = store(server);
+        var holdings = store.value.holdings.get(player);
+        if (holdings == null) return 0;
+        long total = 0;
+        for (var holding : List.copyOf(holdings.entrySet())) {
+            var stock = config.stocks.get(holding.getKey());
+            var state = stock == null ? null : state(server, holding.getKey());
+            if (state == null || state.frozen) continue;
+            Stocks.pressure(stock, state, holding.getValue(), false);
+            total += Stocks.quote(stock, state, false) * holding.getValue();
+            holdings.remove(holding.getKey());
+            record(store, holding.getKey(), state, System.currentTimeMillis());
+        }
+        if (holdings.isEmpty()) store.value.holdings.remove(player);
+        store.setDirty();
+        return total;
+    }
+
     private static void record(Store<Saved> store, String ticker, Stocks.State state, long now) {
         var prices = store.value.history.computeIfAbsent(ticker, key -> new ArrayList<>());
         prices.add(new AuctionBook.Sale(now, Math.round(state.price * 100)));
@@ -135,7 +165,7 @@ final class StockExchange {
         var stock = config.stocks.get(ticker);
         var state = state(server, ticker);
         long held = held(server, player.getUUID(), ticker);
-        if (stock == null || state.frozen || shares <= 0 || shares > OrderBook.MAX_QUANTITY || (buy ? held + shares > stock.holdingLimit : held < shares)) return false;
+        if (stock == null || state.frozen || shares <= 0 || shares > OrderBook.MAX_QUANTITY || (!buy && !Margin.allowsSale(server, player.getUUID(), ticker, shares)) || (buy ? held + shares > stock.holdingLimit : held < shares)) return false;
         var store = store(server);
         double before = state.price;
         Stocks.pressure(stock, state, shares, buy);

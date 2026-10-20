@@ -23,6 +23,13 @@ final class FeatureCommands {
         market(dispatcher);
         companies(dispatcher);
         stocks(dispatcher);
+        dispatcher.register(literal("margin").executes(ctx -> {
+                    var player = ctx.getSource().getPlayerOrException();
+                    ctx.getSource().sendSuccess(() -> Margin.summary(ctx.getSource().getServer(), player.getUUID()), false); return 1;
+                })
+                .then(literal("borrow").then(argument("amount", Commands.amount()).executes(ctx -> action(ctx, player -> Margin.borrow(player, Commands.cents(ctx)), "margin"))))
+                .then(literal("repay").then(argument("amount", Commands.amount()).executes(ctx -> action(ctx,
+                        player -> Margin.repay(ctx.getSource().getServer(), player.getUUID(), Commands.cents(ctx)), "margin")))));
         shares(dispatcher);
         dispatcher.register(literal("bank").executes(ctx -> {
                     PlayerUIMenuType.openUI(ctx.getSource().getPlayerOrException(), Pluginless.BANK_UI); return 1;

@@ -93,6 +93,7 @@ public final class Pluginless {
             scheduler.every(1000, now, elapsed -> Auctions.tick(event.getServer(), System.currentTimeMillis()));
             scheduler.every(60_000, now, elapsed -> Companies.tick(event.getServer(), System.currentTimeMillis()));
             scheduler.every(1000, now, elapsed -> StockExchange.tick(event.getServer(), System.currentTimeMillis()));
+            scheduler.every(1000, now, elapsed -> Margin.tick(event.getServer(), System.currentTimeMillis()));
             long[] remainder = {0};
             scheduler.every(1000, now, elapsed -> {
                 long total = elapsed + remainder[0];

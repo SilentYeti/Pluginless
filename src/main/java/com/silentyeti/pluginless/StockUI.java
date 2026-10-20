@@ -11,7 +11,7 @@ import java.util.List;
 import static com.silentyeti.pluginless.RankUI.*;
 
 public final class StockUI {
-    private static final class Form { String ticker = "", shares = "1", value = "", time = "1h"; }
+    private static final class Form { String ticker = "", shares = "1", value = "", time = "1h", amount = ""; }
 
     /** One screen for everyone; the admin buttons run operator-only commands, so they do nothing for other players. */
     public static ModularUI create(Player player) {
@@ -25,6 +25,10 @@ public final class StockUI {
                 button("pluginless.stock.ui.buy", player, () -> command(player, "stock buy " + word(form.ticker) + " " + word(form.shares))),
                 button("pluginless.stock.ui.sell", player, () -> command(player, "stock sell " + word(form.ticker) + " " + word(form.shares))),
                 label().bind(DataBindingBuilder.componentS2C(() -> server == null ? Component.empty() : StockExchange.portfolio(server, player.getUUID())).build()),
+                label().bind(DataBindingBuilder.componentS2C(() -> server == null ? Component.empty() : Margin.summary(server, player.getUUID())).build()),
+                field("pluginless.margin.ui.amount", () -> form.amount, v -> form.amount = v),
+                button("pluginless.margin.ui.borrow", player, () -> command(player, "margin borrow " + word(form.amount))),
+                button("pluginless.margin.ui.repay", player, () -> command(player, "margin repay " + word(form.amount))),
                 label().setText(Component.translatable("pluginless.stock.ui.admin")),
                 field("pluginless.stock.ui.value", () -> form.value, v -> form.value = v),
                 field("pluginless.stock.ui.time", () -> form.time, v -> form.time = v),

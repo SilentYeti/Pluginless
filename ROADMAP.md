@@ -261,12 +261,12 @@ Both apply to admin stocks and company shares, not to the item market. Both let 
 
 **Borrowing to invest (margin)**
 
-- [ ] Borrow against your holdings up to a configurable multiple (e.g. 2x: $1,000 of your own money controls $2,000 of stock)
-- [ ] Interest charged on the borrowed amount per day
-- [ ] **Forced sale**: if the holdings fall to a set fraction of the loan, they are sold automatically to repay it, with a warning shortly before
-- [ ] **Debt**: if the forced sale does not cover the loan, the rest stays as a debt on the player. Income is taken towards it until cleared, and no new borrowing or company founding is allowed meanwhile.
-- [ ] Borrowing multiple and interest rate adjustable per rank
-- [ ] All loans come from the server; players and companies do not lend. Interest paid is money leaving the economy, and an unpaid debt is money the server created.
+- [x] Borrow against your holdings up to a configurable multiple (e.g. 2x: $1,000 of your own money controls $2,000 of stock). Admin stocks only so far: company shares trade through an order book and cannot be force-sold at a fair price, so they do not count as collateral yet
+- [x] Interest charged on the borrowed amount per day
+- [x] **Forced sale**: if the holdings fall to a set fraction of the loan, they are sold automatically to repay it, with a warning shortly before
+- [x] **Debt**: if the forced sale does not cover the loan, the rest stays as a debt on the player. Income is taken towards it until cleared, and no new borrowing or company founding is allowed meanwhile.
+- [x] Borrowing multiple and interest rate adjustable per rank
+- [x] All loans come from the server; players and companies do not lend. Interest paid is money leaving the economy, and an unpaid debt is money the server created.
 
 **Betting on a fall (short selling)**
 
