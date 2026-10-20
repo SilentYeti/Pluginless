@@ -100,6 +100,9 @@ final class SelfTest {
         alice.setItemInHand(InteractionHand.MAIN_HAND, terminal);
         terminal.use(alice.level(), alice, InteractionHand.MAIN_HAND);
         test.check("right-clicking the ROTH terminal opens the terminal screen", () -> alice.takeOpened() instanceof ModularUIContainerMenu);
+        test.check("the ROTH terminal item does not stack", () -> terminal.getMaxStackSize() == 1);
+
+        test.storeChecks();
 
         var playerHelp = test.output(alice.createCommandSourceStack(), "pluginless");
         test.check("/pluginless lists the commands a player can use, and hides /eco from a non-operator",
@@ -411,6 +414,7 @@ final class SelfTest {
             check("/taxes lists what was paid and why", () -> output(alice.createCommandSourceStack(), "taxes").contains("pay.tax"));
             as(alice, "taxes gui"); check("/taxes gui opens the tax screen", () -> alice.takeOpened() instanceof ModularUIContainerMenu);
 
+            gating(alice, bob, accounts);
             auctions(alice, bob, accounts, normal, grace);
             market(alice, bob, accounts, normal);
             companies(alice, bob, accounts, normal);
@@ -421,6 +425,60 @@ final class SelfTest {
             unlimited.set(false); transferTax.set(0.0); grace.set(20); Income.clear();
             RankGate.ranks = configured; Features.settings = settings;
         }
+    }
+
+    /** Store: one cached instance per name, changes survive a save to disk, and an unparsable value is an error rather than an empty store. */
+    private void storeChecks() {
+        var codec = com.mojang.serialization.Codec.STRING.listOf().xmap(java.util.ArrayList<String>::new, list -> list);
+        var store = Store.open(server, "selftest_store", codec, java.util.ArrayList::new);
+        store.value.add("marker-" + 42);
+        store.setDirty();
+        check("opening a store again returns the same live value", () -> Store.open(server, "selftest_store", codec, java.util.ArrayList::new).value.contains("marker-42"));
+        //? if >=26.1 {
+        /*server.overworld().getDataStorage().saveAndJoin();
+        *///?} else {
+        server.overworld().getDataStorage().save();
+        //?}
+        // NeoForge writes saved data through a temporary file and a rename, so wait for the real file to appear.
+        check("a changed store is written to the world save", () -> {
+            for (int attempt = 0; attempt < 50; attempt++) {
+                try (var files = java.nio.file.Files.walk(server.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT))) {
+                    var file = files.filter(path -> path.getFileName().toString().endsWith("pluginless_selftest_store.dat")
+                            || path.getFileName().toString().equals("selftest_store.dat")).findFirst();
+                    if (file.isPresent()) {
+                        try (var in = new java.util.zip.GZIPInputStream(java.nio.file.Files.newInputStream(file.get()))) {
+                            return new String(in.readAllBytes(), java.nio.charset.StandardCharsets.ISO_8859_1).contains("marker-42");
+                        }
+                    }
+                    Thread.sleep(100);
+                } catch (java.io.IOException e) { return false; }
+                catch (InterruptedException e) { Thread.currentThread().interrupt(); return false; }
+            }
+            return false;
+        });
+        check("a value that does not match its codec is an error, never an empty store", () -> {
+            try { codec.parse(com.mojang.serialization.JsonOps.INSTANCE, new com.google.gson.JsonPrimitive(5)).getOrThrow(); return false; }
+            catch (RuntimeException e) { return true; }
+        });
+    }
+
+    /** Who may run what, what malformed arguments do, and how never-joined targets behave. */
+    private void gating(Tester alice, Tester bob, Accounts accounts) {
+        var a = alice.getUUID(); var b = bob.getUUID();
+        accounts.set(a, 100_00); accounts.set(b, 100_00); accounts.set(Accounts.SERVER, 0);
+        var source = alice.createCommandSourceStack();
+        for (String command : List.of("eco add round3_bob 5", "eco set round3_alice 1000", "setspawn", "rank set round3_alice default", "rank reload", "stock freeze x"))
+            check("a non-operator cannot run /" + command, () -> output(source, command).contains("Unknown or incomplete") || output(source, command).contains("Incorrect argument") || output(source, command).toLowerCase().contains("permission"));
+        check("operator commands changed no balance for a non-operator", () -> accounts.balance(a) == 100_00 && accounts.balance(b) == 100_00);
+        for (String command : List.of("pay round3_bob -5", "pay round3_bob abc", "pay round3_bob 1e16", "pay round3_bob", "pay", "ah bid 1 -5", "ah buy 0", "ah buy abc", "bank borrow -1"))
+            check("malformed /" + command + " is refused", () -> { String out = output(source, command); return !out.isEmpty() && accounts.balance(a) == 100_00 && accounts.balance(b) == 100_00; });
+        check("paying yourself moves nothing", () -> { output(source, "pay round3_alice 5"); return accounts.balance(a) == 100_00; });
+        var ghost = Players.resolve(server, "round3_ghost");
+        check("a never-joined target has no account until money reaches it", () -> !accounts.exists(ghost));
+        as(alice, "pay round3_ghost 5");
+        check("paying a never-joined player opens their account with the starting balance", () -> accounts.exists(ghost) && accounts.balance(ghost) == Config.startBalanceCents() + 5_00 && accounts.balance(a) == 95_00);
+        check("a console operator can run the operator commands", () -> { server.getCommands().performPrefixedCommand(server.createCommandSourceStack().withSuppressedOutput(), "eco add round3_ghost 1");
+            return accounts.balance(ghost) == Config.startBalanceCents() + 6_00; });
     }
 
     private void auctions(Tester alice, Tester bob, Accounts accounts, Ranks.Rank normal, net.neoforged.neoforge.common.ModConfigSpec.ConfigValue<Integer> grace) {
