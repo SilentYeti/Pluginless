@@ -146,6 +146,12 @@ final class FeatureCommands {
                 .then(literal("list").executes(ctx -> listings(ctx, ""))
                         .then(argument("search", StringArgumentType.greedyString()).executes(ctx -> listings(ctx, StringArgumentType.getString(ctx, "search")))))
                 .then(literal("sell").then(argument("amount", Commands.amount()).executes(ctx -> action(ctx, player -> Auctions.sell(player, Commands.cents(ctx)), "auction"))))
+                .then(literal("auction").then(argument("amount", Commands.amount()).executes(ctx -> action(ctx, player -> Auctions.sell(player, Commands.cents(ctx), true), "auction"))))
+                .then(literal("bid").then(argument("id", LongArgumentType.longArg(1)).then(argument("amount", Commands.amount()).executes(ctx -> {
+                    String problem = Auctions.bid(ctx.getSource().getPlayerOrException(), LongArgumentType.getLong(ctx, "id"), Commands.cents(ctx));
+                    if (problem != null) { ctx.getSource().sendFailure(Component.translatable("pluginless.auction." + problem)); return 0; }
+                    ctx.getSource().sendSuccess(() -> Component.translatable("pluginless.auction.bid"), false); return 1;
+                }))))
                 .then(literal("buy").then(argument("id", LongArgumentType.longArg(1)).executes(ctx -> {
                     String problem = Auctions.buy(ctx.getSource().getPlayerOrException(), LongArgumentType.getLong(ctx, "id"));
                     if (problem != null) { ctx.getSource().sendFailure(Component.translatable("pluginless.auction." + problem)); return 0; }

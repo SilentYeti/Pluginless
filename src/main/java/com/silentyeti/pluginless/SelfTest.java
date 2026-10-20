@@ -476,6 +476,29 @@ final class SelfTest {
                 && book.notices.get(a).get(0).kind().equals("expired"));
         online(alice, true);
 
+        accounts.set(a, 100_00); accounts.set(b, 100_00); accounts.set(Accounts.SERVER, 0);
+        alice.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND)); as(alice, "ah auction 10");
+        long auction = book.listings.keySet().iterator().next();
+        check("/ah auction lists the held item as a bidding auction", () -> alice.getMainHandItem().isEmpty() && book.listings.get(auction).auction());
+        accounts.set(a, 100_00);
+        as(bob, "ah buy " + auction); as(alice, "ah bid " + auction + " 10"); as(bob, "ah bid " + auction + " 9");
+        check("an auction cannot be bought outright, bid on by its seller or bid under the start price", () -> book.listings.get(auction).bidder() == null && accounts.balance(b) == 100_00);
+        as(bob, "ah bid " + auction + " 10");
+        check("a bid is held in escrow", () -> b.equals(book.listings.get(auction).bidder()) && accounts.balance(b) == 90_00 && accounts.balance(Accounts.ESCROW) == 10_00);
+        as(bob, "ah bid " + auction + " 10.2");
+        check("a bid under the minimum raise is refused", () -> book.listings.get(auction).bid() == 10_00);
+        as(bob, "ah cancel " + auction); as(alice, "ah cancel " + auction);
+        check("a listing with a bid cannot be cancelled by its seller", () -> book.listings.containsKey(auction));
+        as(bob, "ah bid " + auction + " 20");
+        check("raising your own bid escrows only the difference", () -> accounts.balance(b) == 80_00 && accounts.balance(Accounts.ESCROW) == 20_00);
+        var auctionCopy = Auctions.CODEC.parse(JsonOps.INSTANCE, Auctions.CODEC.encodeStart(JsonOps.INSTANCE, book).getOrThrow()).getOrThrow();
+        check("the auction codec preserves bids", () -> auctionCopy.listings.get(auction).equals(book.listings.get(auction)));
+        Auctions.tick(server, book.listings.get(auction).expires());
+        check("an ended auction pays the seller less tax from escrow and boxes the item for the winner once", () -> !book.listings.containsKey(auction)
+                && accounts.balance(a) == 100_00 + 19_60 && accounts.balance(Accounts.SERVER) == 10 + 40 && accounts.balance(Accounts.ESCROW) == 0 && book.boxes.get(b).size() == 1);
+        Auctions.deliver(server);
+        as(bob, "ah collect"); check("the winner collects the item", () -> items(bob, Items.DIAMOND) == 1);
+
         String shulker = "{\"id\":\"minecraft:shulker_box\",\"count\":1,\"components\":{\"minecraft:container\":[{\"slot\":0,\"item\":{\"id\":\"minecraft:bread\",\"count\":16}}]}}";
         check("container contents can be previewed from a stored item", () -> Stacks.contents(Stacks.write(server, Stacks.read(server, shulker))).equals(List.of("16 minecraft:bread")));
         var encoded = Auctions.CODEC.encodeStart(JsonOps.INSTANCE, book).getOrThrow();

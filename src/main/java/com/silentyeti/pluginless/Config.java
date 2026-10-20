@@ -35,6 +35,7 @@ public final class Config {
     private static final ModConfigSpec.DoubleValue AUCTION_TAX = BUILDER.comment("Percent of the sale price kept from the seller").defineInRange("auctionSalesTaxPercent", 2.0, 0.0, 100.0);
     private static final ModConfigSpec.IntValue AUCTION_HOURS = BUILDER.defineInRange("auctionListingHours", 48, 1, 8760);
     private static final ModConfigSpec.IntValue AUCTION_GRACE = BUILDER.comment("Seconds after listing before anyone can buy").defineInRange("auctionGraceSeconds", 20, 0, 3600);
+    private static final ModConfigSpec.DoubleValue AUCTION_RAISE = BUILDER.comment("Percent a bid must beat the current bid by").defineInRange("auctionMinRaisePercent", 5.0, 0.0, 100.0);
     private static final ModConfigSpec.IntValue AUCTION_SLOTS = BUILDER.defineInRange("auctionSlots", 14, 0, 1000);
     private static final ModConfigSpec.DoubleValue AUCTION_MIN = BUILDER.defineInRange("auctionMinPrice", 0.01, 0.01, 1e12);
     private static final ModConfigSpec.DoubleValue AUCTION_MAX = BUILDER.defineInRange("auctionMaxPrice", 1e9, 0.01, 1e12);
@@ -74,6 +75,7 @@ public final class Config {
     static double auctionTax() { return AUCTION_TAX.get(); }
     static long auctionMillis() { return AUCTION_HOURS.get() * 3_600_000L; }
     static long auctionGraceMillis() { return AUCTION_GRACE.get() * 1000L; }
+    static double auctionRaise() { return AUCTION_RAISE.get(); }
     static int auctionSlots() { return AUCTION_SLOTS.get(); }
     static long auctionMinCents() { return Math.round(AUCTION_MIN.get() * 100); }
     static long auctionMaxCents() { return Math.round(AUCTION_MAX.get() * 100); }

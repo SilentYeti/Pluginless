@@ -19,7 +19,7 @@ Items marked **Decide** are open questions; they are collected again at the bott
 - [x] QOL commands: `/spawn`, homes, `/tpa`, `/rtp`, `/back`, warps, teleport warm-up, command costs
 - [x] Cosmetics: `/nick`, `/realname`, `/namecolor`, `/namegradient`, `/skull`, `/hat`, titles (`/nametitle`), cosmetics screen
 - [x] Income and taxes: paychecks, daily login reward, mob-kill rewards, `/sell` and `/worth`, transfer tax, `/taxes`
-- [x] Auction house: fixed-price listings, collection box, listing fee and sales tax, grace period, search and filters, watch list, offline notices, price history
+- [x] Auction house: fixed-price listings, bidding auctions with escrow, collection box, listing fee and sales tax, grace period, search and filters, watch list, offline notices, price history
 - [x] Company shares: voting shares on the order market, takeovers, owner-chosen dividends, issuing more, bankruptcy, optional protections
 - [x] Admin stocks: `stocks.json` with randomness, drift, return to a level, cycles, momentum, shocks and player pressure; `/stock nudge`, `trend`, `shock`, `set`, `freeze`
 - [x] Companies: founding fee, owner/manager/employee roles, company account, payroll, dissolving
@@ -36,7 +36,7 @@ Items marked **Decide** are open questions; they are collected again at the bott
 - [ ] QOL commands: the wider Essentials set (undecided)
 - [ ] Cosmetics: particle trails
 - [ ] Income and taxes: jobs and wealth tax (undecided); shop and chunk taxes come with those modules
-- [ ] Auction house: bidding auctions, buy orders
+- [ ] Auction house: buy orders
 - [ ] Borrowing to invest and short selling (loans and debt in the bank are done)
 - [ ] Faction compat: Open Parties and Claims first, then WarForge (1.21.1 only) and FTB Chunks; no adapter code exists yet
 - [ ] Court system
@@ -144,7 +144,7 @@ Every rate is configurable, can be zero, and can be lowered by rank perk. A `/ta
 
 - [x] `/ah` opens the listings; `/ah sell <price>` lists the held item
 - [x] Fixed-price listings
-- [ ] Bidding auctions
+- [x] Bidding auctions (`/ah auction`, `/ah bid`)
 - [x] Listings expire after a configurable time; unsold items go to a collection box, not straight to the inventory
 - [x] Sale proceeds paid even when the seller is offline
 - [x] Search, category filter, sort by price or time
@@ -156,7 +156,7 @@ Every rate is configurable, can be zero, and can be lowered by rank perk. A `/ta
 Taken from how existing plugins and mods do it (researched 2026-10-11):
 
 - [x] Short grace period after listing (Hypixel uses 20 seconds) before anyone can buy, so a mistyped price can be cancelled
-- [ ] Bidding rules when auctions arrive: minimum raise as a percentage of the current bid, and a bid in the last two minutes extends the timer to two minutes
+- [x] Bidding rules: minimum raise as a percentage of the current bid, and a bid in the last two minutes extends the timer to two minutes
 - [x] Fee charged at listing time and not refunded, scaled by price tier; it discourages absurd prices and spam relisting
 - [x] Preview the contents of a shulker box or bundle before buying
 - [x] Watch list: get notified when an item you are looking for is listed (Fadah)

@@ -11,11 +11,92 @@ import static org.junit.jupiter.api.Assertions.*;
 class AuctionBookTest {
     private final UUID seller = UUID.randomUUID();
     private final UUID buyer = UUID.randomUUID();
+    private final UUID rival = UUID.randomUUID();
     private final Accounts accounts = new Accounts(new HashMap<>(), 100, () -> {});
     private final AuctionBook book = new AuctionBook();
 
     private long listed() {
         return book.list(seller, "ITEM", "minecraft:diamond_pickaxe", "Diamond Pickaxe", 1, 50, 0, 1000).id();
+    }
+
+    private List<AuctionBook.Listing> expire(long now) {
+        return book.expire(now, accounts, (who, price) -> price / 10);
+    }
+
+    private long auction() {
+        return book.listAuction(seller, "ITEM", "minecraft:diamond", "Diamond", 1, 50, 0, 1_000_000).id();
+    }
+
+    @Test
+    void bidsMustBeatTheRaiseAndRefundTheOutbidAtOnce() {
+        long id = auction();
+        assertEquals("auction", book.buy(buyer, id, 30, 20, accounts, 0));
+        assertEquals("own", book.bid(seller, id, 60, 30, 20, 10, accounts));
+        assertEquals("grace", book.bid(buyer, id, 60, 5, 20, 10, accounts));
+        assertEquals("low", book.bid(buyer, id, 49, 30, 20, 10, accounts));
+        assertEquals("funds", book.bid(buyer, id, 101, 30, 20, 10, accounts));
+        assertNull(book.bid(buyer, id, 50, 30, 20, 10, accounts));
+        assertEquals(50, accounts.balance(Accounts.ESCROW));
+        assertEquals("low", book.bid(rival, id, 54, 31, 20, 10, accounts));
+        assertNull(book.bid(rival, id, 55, 31, 20, 10, accounts));
+        assertEquals(100, accounts.balance(buyer));
+        assertEquals(45, accounts.balance(rival));
+        assertEquals(55, accounts.balance(Accounts.ESCROW));
+        assertEquals("outbid", book.notices.get(buyer).get(0).kind());
+    }
+
+    @Test
+    void raisingYourOwnBidOnlyEscrowsTheDifference() {
+        long id = auction();
+        assertNull(book.bid(buyer, id, 50, 30, 20, 10, accounts));
+        assertNull(book.bid(buyer, id, 60, 31, 20, 10, accounts));
+        assertEquals(40, accounts.balance(buyer));
+        assertEquals(60, accounts.balance(Accounts.ESCROW));
+    }
+
+    @Test
+    void aLateBidExtendsTheEndToTwoMinutes() {
+        long id = auction();
+        assertNull(book.bid(buyer, id, 50, 100_000, 20, 10, accounts));
+        assertEquals(1_000_000, book.listings.get(id).expires());
+        assertNull(book.bid(rival, id, 60, 1_000_000 - 119_000, 20, 10, accounts));
+        assertEquals(1_000_000 - 119_000 + AuctionBook.EXTENSION, book.listings.get(id).expires());
+        assertEquals("gone", book.bid(buyer, id, 70, 1_000_000 - 119_000 + AuctionBook.EXTENSION, 20, 10, accounts));
+    }
+
+    @Test
+    void anAuctionSettlesOnceFromEscrowOnExpiry() {
+        long id = auction();
+        assertNull(book.bid(buyer, id, 50, 30, 20, 10, accounts));
+        assertTrue(expire(999_999).isEmpty());
+        assertEquals(1, expire(1_000_000).size());
+        assertEquals(5, accounts.balance(Accounts.SERVER));
+        assertEquals(145, accounts.balance(seller));
+        assertEquals(0, accounts.balance(Accounts.ESCROW));
+        assertEquals(List.of("ITEM"), book.boxes.get(buyer));
+        assertNull(book.boxes.get(seller));
+        assertTrue(expire(2_000_000).isEmpty());
+        assertEquals(50, book.history.get("minecraft:diamond").get(0).unitPrice());
+    }
+
+    @Test
+    void anAuctionWithoutBidsGoesBackToTheSeller() {
+        long id = auction();
+        assertEquals(1, expire(1_000_000).size());
+        assertEquals(List.of("ITEM"), book.boxes.get(seller));
+        assertFalse(book.listings.containsKey(id));
+    }
+
+    @Test
+    void onlyAnAdminCancelsAnAuctionWithBidsAndTheBidderIsRefunded() {
+        long id = auction();
+        assertNull(book.bid(buyer, id, 50, 30, 20, 10, accounts));
+        assertFalse(book.cancel(seller, id, false, accounts));
+        assertTrue(book.cancel(seller, id, true, accounts));
+        assertEquals(100, accounts.balance(buyer));
+        assertEquals(0, accounts.balance(Accounts.ESCROW));
+        assertEquals(List.of("ITEM"), book.boxes.get(seller));
+        assertEquals("fixed", book.bid(buyer, listed(), 60, 30, 20, 10, accounts));
     }
 
     @Test
@@ -36,8 +117,8 @@ class AuctionBookTest {
         long id = listed();
         assertNull(book.buy(buyer, id, 30, 20, accounts, 0));
         assertEquals("gone", book.buy(buyer, id, 31, 20, accounts, 0));
-        assertFalse(book.cancel(seller, id, false));
-        assertTrue(book.expire(5000).isEmpty());
+        assertFalse(book.cancel(seller, id, false, accounts));
+        assertTrue(expire(5000).isEmpty());
         assertNull(book.boxes.get(seller));
         assertEquals("ITEM", book.take(buyer));
         assertNull(book.take(buyer));
@@ -48,11 +129,11 @@ class AuctionBookTest {
     void expiryAndCancelReturnTheItemToTheSellerOnly() {
         long expiring = listed();
         long cancelled = listed();
-        assertFalse(book.cancel(buyer, cancelled, false));
-        assertTrue(book.cancel(seller, cancelled, false));
+        assertFalse(book.cancel(buyer, cancelled, false, accounts));
+        assertTrue(book.cancel(seller, cancelled, false, accounts));
         assertEquals("gone", book.buy(buyer, expiring, 1000, 20, accounts, 0));
-        assertEquals(1, book.expire(1000).size());
-        assertTrue(book.expire(1000).isEmpty());
+        assertEquals(1, expire(1000).size());
+        assertTrue(expire(1000).isEmpty());
         assertEquals(List.of("ITEM", "ITEM"), book.boxes.get(seller));
         assertEquals(100, accounts.balance(buyer));
     }

@@ -23,7 +23,6 @@ Early. The foundation is in place and the modules are built on top of it one at 
 | Income: paychecks, daily reward, mob rewards, `/sell`; transfer tax and `/taxes` | Working |
 | Auction house: fixed-price listings, collection box, fees, watch list | Working |
 | Item market: buy and sell orders for bulk items, instant buy/sell, price chart | Working |
-| Auction bidding | Planned |
 | Companies: roles, company account, payroll | Working |
 | Shops: company-owned menu shops, admin shops, directory | Working |
 | Admin stocks: configurable price behaviour, trading against the server, admin nudges | Working |
@@ -73,6 +72,7 @@ Early. The foundation is in place and the modules are built on top of it one at 
 | `/ah` | Everyone | Opens the auction house screen |
 | `/ah list [search]`, `/ah view <id>` | Everyone | Lists listings / shows one, including what a shulker box or bundle holds |
 | `/ah sell <price>` | Everyone | Lists the held stack; charges the listing fee |
+| `/ah auction <start price>`, `/ah bid <id> <amount>` | Everyone | Starts a bidding auction with the held stack / bids on one; bids are held in escrow and the outbid bidder is refunded at once |
 | `/ah buy <id>`, `/ah cancel <id>`, `/ah collect` | Everyone | Buys a listing, cancels your own, or moves boxed items to your inventory |
 | `/ah watch <item id>`, `/ah unwatch <item id>` | Everyone | Tells you when that item is listed |
 | `/ah remove <id>`, `/ah history <player>` | Operators | Returns any listing to its seller / shows a player's auction money movements |
@@ -140,6 +140,7 @@ destination, cents, reason and timestamp in the world save. Failed operations do
 | `mobRewardHourlyCap` | `100` | Paid mob kills per player per hour |
 | `transferTaxPercent` | `0.0` | Charged to the sender on top of a `/pay` amount |
 | `auctionSalesTaxPercent` | `2.0` | Kept from the seller's proceeds |
+| `auctionMinRaisePercent` | `5.0` | How much a bid must beat the highest bid by (at least one cent); a bid in the last two minutes moves the end to two minutes from then |
 | `auctionListingHours`, `auctionGraceSeconds` | `48`, `20` | Listing lifetime, and the time after listing before anyone can buy |
 | `auctionSlots` | `14` | Listings per player; the rank perk `auction_slots` overrides it |
 | `auctionMinPrice`, `auctionMaxPrice` | `0.01`, `1e9` | Allowed listing prices |

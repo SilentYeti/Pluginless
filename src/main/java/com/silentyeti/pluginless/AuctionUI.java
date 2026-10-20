@@ -22,6 +22,7 @@ public final class AuctionUI {
                 button("pluginless.auction.ui.collect", player, () -> command(player, "ah collect")),
                 field("pluginless.auction.ui.price", () -> form.price, v -> form.price = v),
                 button("pluginless.auction.ui.sell", player, () -> command(player, "ah sell " + word(form.price))),
+                button("pluginless.auction.ui.start", player, () -> command(player, "ah auction " + word(form.price))),
                 field("pluginless.auction.ui.search", () -> form.search, v -> form.search = v),
                 picker("pluginless.auction.ui.category", player, () -> form.category, v -> form.category = v, () -> {
                     var categories = new ArrayList<String>(); categories.add("all"); categories.addAll(Features.settings.auctionCategories.keySet()); return categories;
@@ -34,6 +35,7 @@ public final class AuctionUI {
                     try { form.status = Auctions.view(server, Long.parseLong(form.id)); } catch (NumberFormatException e) { form.status = Component.translatable("pluginless.auction.gone"); }
                 }),
                 button("pluginless.auction.ui.buy", player, () -> command(player, "ah buy " + word(form.id))),
+                button("pluginless.auction.ui.bid", player, () -> command(player, "ah bid " + word(form.id) + " " + word(form.price))),
                 button("pluginless.auction.ui.cancel", player, () -> command(player, "ah cancel " + word(form.id))),
                 label().bind(DataBindingBuilder.componentS2C(() -> form.status).build()));
         return screen(player, "pluginless.auction.title", content);

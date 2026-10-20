@@ -23,8 +23,12 @@ final class Auctions {
             Codec.INT.fieldOf("count").forGetter(AuctionBook.Listing::count),
             Codec.LONG.fieldOf("price").forGetter(AuctionBook.Listing::price),
             Codec.LONG.fieldOf("listed").forGetter(AuctionBook.Listing::listed),
-            Codec.LONG.fieldOf("expires").forGetter(AuctionBook.Listing::expires)
-    ).apply(instance, AuctionBook.Listing::new));
+            Codec.LONG.fieldOf("expires").forGetter(AuctionBook.Listing::expires),
+            Codec.BOOL.optionalFieldOf("auction", false).forGetter(AuctionBook.Listing::auction),
+            Codec.LONG.optionalFieldOf("bid", 0L).forGetter(AuctionBook.Listing::bid),
+            UUIDUtil.STRING_CODEC.optionalFieldOf("bidder").forGetter(listing -> java.util.Optional.ofNullable(listing.bidder()))
+    ).apply(instance, (id, seller, item, itemId, name, count, price, listed, expires, auction, bid, bidder) ->
+            new AuctionBook.Listing(id, seller, item, itemId, name, count, price, listed, expires, auction, bid, bidder.orElse(null))));
     private static final Codec<AuctionBook.Sale> SALE = RecordCodecBuilder.create(instance -> instance.group(
             Codec.LONG.fieldOf("time").forGetter(AuctionBook.Sale::time),
             Codec.LONG.fieldOf("unitPrice").forGetter(AuctionBook.Sale::unitPrice)
@@ -65,6 +69,10 @@ final class Auctions {
     }
 
     static boolean sell(ServerPlayer player, long price) {
+        return sell(player, price, false);
+    }
+
+    static boolean sell(ServerPlayer player, long price, boolean auction) {
         var server = player.level().getServer();
         var stack = player.getMainHandItem();
         if (server == null || stack.isEmpty() || price < Config.auctionMinCents() || price > Config.auctionMaxCents()) return false;
@@ -76,7 +84,8 @@ final class Auctions {
         long fee = fee(server, player.getUUID(), price);
         if (fee > 0 && !Ledger.collect(server, player.getUUID(), fee, "auction.fee")) return false;
         long now = System.currentTimeMillis();
-        var listing = store.value.list(player.getUUID(), item, itemId, stack.getHoverName().getString(), stack.getCount(), price, now, Config.auctionMillis());
+        var listing = auction ? store.value.listAuction(player.getUUID(), item, itemId, stack.getHoverName().getString(), stack.getCount(), price, now, Config.auctionMillis())
+                : store.value.list(player.getUUID(), item, itemId, stack.getHoverName().getString(), stack.getCount(), price, now, Config.auctionMillis());
         stack.setCount(0);
         player.inventoryMenu.broadcastChanges();
         for (var watcher : store.value.watchers(itemId)) {
@@ -100,10 +109,22 @@ final class Auctions {
         return problem;
     }
 
+    /** Null when the bid stands, otherwise the reason. */
+    static String bid(ServerPlayer player, long id, long amount) {
+        var server = player.level().getServer();
+        var store = store(server);
+        String problem = store.value.bid(player.getUUID(), id, amount, System.currentTimeMillis(), Config.auctionGraceMillis(), Config.auctionRaise(),
+                Ledger.of(server, player.getUUID().toString(), "auction.bid"));
+        if (problem == null) { store.setDirty(); deliver(server); }
+        return problem;
+    }
+
     static boolean cancel(ServerPlayer player, long id, boolean admin) {
-        var store = store(player.level().getServer());
-        if (!store.value.cancel(player.getUUID(), id, admin)) return false;
+        var server = player.level().getServer();
+        var store = store(server);
+        if (!store.value.cancel(player.getUUID(), id, admin, Ledger.of(server, player.getUUID().toString(), "auction.cancel"))) return false;
         store.setDirty();
+        deliver(server);
         return true;
     }
 
@@ -140,7 +161,8 @@ final class Auctions {
 
     static void tick(MinecraftServer server, long now) {
         var store = store(server);
-        if (!store.value.expire(now).isEmpty()) store.setDirty();
+        if (!store.value.expire(now, Ledger.of(server, Accounts.SERVER.toString(), "auction"),
+                (seller, price) -> Taxes.percent(price, Config.auctionTax(), Income.perk(server, seller, "fee_multiplier"))).isEmpty()) store.setDirty();
         deliver(server);
     }
 
@@ -162,7 +184,7 @@ final class Auctions {
         var result = Component.translatable("pluginless.auction.list", found.size());
         // shortcut: the first 30 matches, add paging when a server's listings outgrow search and filters
         for (var listing : found.subList(0, Math.min(30, found.size()))) {
-            result.append(Component.translatable("pluginless.auction.line", listing.id(), listing.count(), listing.name(), Config.format(listing.price()),
+            result.append(Component.translatable("pluginless.auction.line", listing.id(), listing.count(), listing.name(), Config.format(listing.auction() ? Math.max(listing.price(), listing.bid()) : listing.price()),
                     Commands.name(server, listing.seller()), (listing.expires() - now) / 3_600_000));
         }
         return result;
@@ -175,6 +197,8 @@ final class Auctions {
         var sales = book.history.getOrDefault(listing.itemId(), List.of());
         var result = Component.translatable("pluginless.auction.view", listing.id(), listing.count(), listing.name(), listing.itemId(), Config.format(listing.price()),
                 Commands.name(server, listing.seller()), sales.isEmpty() ? "-" : Config.format(sales.get(sales.size() - 1).unitPrice()));
+        if (listing.auction()) result.append(Component.translatable("pluginless.auction.view.bid", listing.bidder() == null ? "-" : Config.format(listing.bid()),
+                Config.format(AuctionBook.minimumBid(listing, Config.auctionRaise()))));
         for (String line : Stacks.contents(listing.item())) result.append(Component.literal("\n  " + line));
         return result;
     }
