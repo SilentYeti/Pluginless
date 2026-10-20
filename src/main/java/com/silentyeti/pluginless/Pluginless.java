@@ -86,6 +86,7 @@ public final class Pluginless {
         });
         NeoForge.EVENT_BUS.addListener((ServerStartedEvent event) -> {
             scheduler = new Scheduler();
+            ClaimCompat.init(event.getServer());
             long now = System.nanoTime() / 1_000_000;
             scheduler.every(1000, now, elapsed -> RankGate.expire(event.getServer(), System.currentTimeMillis()));
             scheduler.every(1000, now, elapsed -> Bank.tick(event.getServer(), System.currentTimeMillis()));
@@ -104,7 +105,7 @@ public final class Pluginless {
             if (scheduler != null) scheduler.tick(System.nanoTime() / 1_000_000);
         });
         NeoForge.EVENT_BUS.addListener((ServerStoppedEvent event) -> {
-            scheduler = null; Teleports.clear(event.getServer()); Bank.clear(event.getServer()); Income.clear(); Companies.SELECTED.clear();
+            scheduler = null; ClaimCompat.clear(); Teleports.clear(event.getServer()); Bank.clear(event.getServer()); Income.clear(); Companies.SELECTED.clear();
         });
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.entity.living.LivingDamageEvent.Post event) -> {
             if (event.getOriginalDamage() > event.getBlockedDamage() && event.getEntity() instanceof ServerPlayer player) Teleports.cancel(player);

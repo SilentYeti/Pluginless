@@ -30,7 +30,8 @@ Early. The foundation is in place and the modules are built on top of it one at 
 | Margin and short selling | Planned |
 | Court system | Planned |
 | Homes, spawn, warps, teleport requests, random teleport, back and cosmetics | Working |
-| Faction compat: Open Parties and Claims first, WarForge Remaintained (1.21.1 only), FTB Chunks (chunk tax, faction treasury) | Planned, no code yet |
+| Faction compat: claim-group interface and an Open Parties and Claims adapter (read-only: parties, members, chunk counts; optional, off without the mod) | Working |
+| Faction compat: WarForge Remaintained (1.21.1 only), FTB Chunks, chunk tax, faction treasury | Planned, no code yet |
 
 ## Commands
 

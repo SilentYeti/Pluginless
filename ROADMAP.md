@@ -38,7 +38,8 @@ Items marked **Decide** are open questions; they are collected again at the bott
 - [ ] Income and taxes: jobs and wealth tax (undecided); shop and chunk taxes come with those modules
 - [ ] Auction house: buy orders
 - [ ] Borrowing to invest and short selling (loans and debt in the bank are done)
-- [ ] Faction compat: Open Parties and Claims first, then WarForge (1.21.1 only) and FTB Chunks; no adapter code exists yet
+- [x] Faction compat, groundwork: `ClaimGroups` interface and an Open Parties and Claims adapter (read-only)
+- [ ] Faction compat: WarForge (1.21.1 only) and FTB Chunks adapters, chunk tax and faction treasury
 - [ ] Court system
 - [ ] ROTH terminal: a crafting recipe for the item (the home screen already links every built module)
 
@@ -397,7 +398,7 @@ Which claim mods have NeoForge builds (checked 2026-10-11):
 | FTB Chunks + FTB Teams | yes | yes | no | no | Teams | Claims are in FTB Chunks, teams in FTB Teams; no 26.2 or 26.3 builds yet |
 | Flan | yes | yes | yes | yes | None | Claims are free-form areas owned by one player, not chunks; would be taxed per block of area, and has no teams |
 
-- [ ] **Open Parties and Claims**: first adapter to build, since it works everywhere. Claims belong to players and parties group players, so the tax is per player's claim count, optionally paid from a party treasury.
+- [x] **Open Parties and Claims**: read-only adapter built (`OpacClaimGroups`, via reflection, so the mod stays optional and the build does not depend on it). Parties are groups; a party's chunks are the sum of its members' claim counts. Only active when the mod is installed. Tax and treasury are not built yet.
 - [ ] **WarForge Remaintained** (1.21.1 only): its API currently exposes claims and siege reinforcement only, so claim counts are readable, but anything deeper (war costs, siege rewards, loot paid to the winner) may need additions on the WarForge side.
 - [ ] **FTB Chunks + FTB Teams** (1.21.1 and 26.1): tax counts FTB Chunks claims per team.
 - [ ] **Flan**: only if wanted; it needs a per-area rate instead of a per-chunk one. **Decide**.

@@ -114,6 +114,7 @@ final class SelfTest {
         test.ranks(alice, accounts);
         test.round2();
         test.round3();
+        test.check("claim compat stays off when no claim mod is installed", () -> ClaimCompat.active().isEmpty());
 
         // The last line is what tools/selftest.py reads.
         test.say("selftest: %d passed, %d failed".formatted(test.passed, test.failed));
