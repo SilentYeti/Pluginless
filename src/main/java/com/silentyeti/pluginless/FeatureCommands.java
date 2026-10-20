@@ -30,6 +30,13 @@ final class FeatureCommands {
                 .then(literal("borrow").then(argument("amount", Commands.amount()).executes(ctx -> action(ctx, player -> Margin.borrow(player, Commands.cents(ctx)), "margin"))))
                 .then(literal("repay").then(argument("amount", Commands.amount()).executes(ctx -> action(ctx,
                         player -> Margin.repay(ctx.getSource().getServer(), player.getUUID(), Commands.cents(ctx)), "margin")))));
+        dispatcher.register(literal("short").executes(ctx -> {
+                    var player = ctx.getSource().getPlayerOrException();
+                    ctx.getSource().sendSuccess(() -> Shorts.summary(ctx.getSource().getServer(), player.getUUID()), false); return 1;
+                })
+                .then(literal("open").then(ticker().then(argument("shares", LongArgumentType.longArg(1, OrderBook.MAX_QUANTITY)).executes(ctx -> action(ctx,
+                        player -> Shorts.open(player, StringArgumentType.getString(ctx, "ticker"), LongArgumentType.getLong(ctx, "shares")), "short")))))
+                .then(literal("close").then(ticker().executes(ctx -> action(ctx, player -> Shorts.close(player, StringArgumentType.getString(ctx, "ticker")), "short")))));
         shares(dispatcher);
         dispatcher.register(literal("bank").executes(ctx -> {
                     PlayerUIMenuType.openUI(ctx.getSource().getPlayerOrException(), Pluginless.BANK_UI); return 1;

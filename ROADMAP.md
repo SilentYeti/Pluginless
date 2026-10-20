@@ -37,7 +37,7 @@ Items marked **Decide** are open questions; they are collected again at the bott
 - [ ] Cosmetics: particle trails
 - [ ] Income and taxes: jobs and wealth tax (undecided); shop and chunk taxes come with those modules
 - [ ] Auction house: buy orders
-- [ ] Borrowing to invest and short selling (loans and debt in the bank are done)
+- [ ] Borrowing to invest and short selling on company shares (both are done for admin stocks)
 - [x] Faction compat, groundwork: `ClaimGroups` interface and an Open Parties and Claims adapter (read-only)
 - [ ] Faction compat: WarForge (1.21.1 only) and FTB Chunks adapters, chunk tax and faction treasury
 - [ ] Court system
@@ -270,13 +270,13 @@ Both apply to admin stocks and company shares, not to the item market. Both let 
 
 **Betting on a fall (short selling)**
 
-- [ ] Open a short on a stock with money put up as security; profit if the price falls, loss if it rises
-- [ ] Losses are unlimited in principle, so the position is closed automatically once losses reach the security, any shortfall becoming debt as above
-- [ ] Daily fee for keeping a short open
-- [ ] *Admin stocks*: the short is a bet against the server, like every other admin-stock trade
+- [x] Open a short on a stock with money put up as security; profit if the price falls, loss if it rises
+- [x] Losses are unlimited in principle, so the position is closed automatically once losses reach the security, any shortfall becoming debt as above
+- [x] Daily fee for keeping a short open
+- [x] *Admin stocks*: the short is a bet against the server, like every other admin-stock trade
 - [ ] *Company shares*: the shares are borrowed from holders who offer theirs for lending and earn the fee. This keeps it player against player. If the server paid out instead, an owner could bet against their own company, wreck it on purpose, and collect newly created money without limit.
 - [ ] An owner shorting their own company through borrowed shares stays possible; the loser is whoever bought those shares
-- [ ] Open short interest shown on each stock's page
+- [x] Open short interest shown on each stock's page
 
 Depends on a loan and debt system in the bank, which this now makes a required part of the plan.
 

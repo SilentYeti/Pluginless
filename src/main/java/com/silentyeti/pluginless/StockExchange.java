@@ -133,7 +133,7 @@ final class StockExchange {
         return total;
     }
 
-    private static void record(Store<Saved> store, String ticker, Stocks.State state, long now) {
+    static void record(Store<Saved> store, String ticker, Stocks.State state, long now) {
         var prices = store.value.history.computeIfAbsent(ticker, key -> new ArrayList<>());
         prices.add(new AuctionBook.Sale(now, Math.round(state.price * 100)));
         // shortcut: the last 200 prices per stock, move to time buckets when charts need longer history
@@ -231,7 +231,8 @@ final class StockExchange {
         if (stock == null) return Component.translatable("pluginless.stock.unknown");
         var state = state(server, ticker);
         return Component.translatable("pluginless.stock.info", stock.description, Config.format(Stocks.quote(stock, state, true)),
-                Config.format(Stocks.quote(stock, state, false)), held(server, player, ticker), stock.holdingLimit).append(line(server, ticker));
+                Config.format(Stocks.quote(stock, state, false)), held(server, player, ticker), stock.holdingLimit)
+                .append(Component.translatable("pluginless.short.interest", Shorts.interest(server, ticker))).append(line(server, ticker));
     }
 
     static Component portfolio(MinecraftServer server, UUID player) {

@@ -27,7 +27,8 @@ Early. The foundation is in place and the modules are built on top of it one at 
 | Shops: company-owned menu shops, admin shops, directory | Working |
 | Admin stocks: configurable price behaviour, trading against the server, admin nudges | Working |
 | Company shares: voting shares, takeovers, dividends, bankruptcy | Working |
-| Margin (borrowing to invest) | Done for admin stocks; company shares and short selling planned |
+| Margin (borrowing to invest) | Done for admin stocks; company shares planned |
+| Short selling | Done for admin stocks; company shares planned |
 | Court system | Planned |
 | Homes, spawn, warps, teleport requests, random teleport, back and cosmetics | Working |
 | Faction compat: claim-group interface and an Open Parties and Claims adapter (read-only: parties, members, chunk counts; optional, off without the mod) | Working |
@@ -98,6 +99,7 @@ Early. The foundation is in place and the modules are built on top of it one at 
 | `/shop admin <name>` | Operators | Creates a server shop with unlimited stock |
 | `/stock`, `/stock list`, `/stock info <ticker>`, `/stock portfolio` | Everyone | Opens the stock screen, or shows prices with a chart, one stock, or your shares |
 | `/stock buy\|sell <ticker> <shares>` | Everyone | Trades with the server at the current price |
+| `/short`, `/short open <ticker> <shares>`, `/short close <ticker>` | Everyone | Bets against an admin stock: sells at the sell quote with `shortDepositRatio` of the position held in escrow; profit if the price falls; closed automatically when losses reach `shortCloseRatio` of the security (any shortfall becomes bank debt); `shortDailyFeePercent` per day comes out of the security; open short interest is on `/stock info` |
 | `/margin`, `/margin borrow\|repay <amount>` | Everyone | Server loan against your stocks, up to `marginMultiple` (rank perk `margin_multiple`), interest `marginDailyInterest` per day (`margin_interest`); warned below `marginWarnRatio` x loan, everything sold below `marginLiquidateRatio` x loan, any shortfall becomes bank debt |
 | `/stock nudge <ticker> <percent> [duration]` | Operators | Pushes a price up or down on the next update, or spread over a duration such as `2h` |
 | `/stock trend <ticker> <up\|down> <percent per day> <duration>` | Operators | Pulls a price steadily for a while |

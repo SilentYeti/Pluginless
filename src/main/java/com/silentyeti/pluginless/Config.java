@@ -24,6 +24,9 @@ public final class Config {
 
     private static final ModConfigSpec.DoubleValue MARGIN_MULTIPLE = BUILDER.comment("Stocks you may control per unit of your own money; 1 disables margin loans").defineInRange("marginMultiple", 2.0, 1.0, 100.0);
     private static final ModConfigSpec.DoubleValue MARGIN_INTEREST = BUILDER.comment("Percent per day on the margin loan").defineInRange("marginDailyInterest", 1.0, 0.0, 100.0);
+    private static final ModConfigSpec.DoubleValue SHORT_DEPOSIT = BUILDER.comment("Security a short seller puts up, as a share of the position's value").defineInRange("shortDepositRatio", 0.5, 0.01, 10.0);
+    private static final ModConfigSpec.DoubleValue SHORT_CLOSE = BUILDER.comment("A short is closed when losses use up this share of its security").defineInRange("shortCloseRatio", 0.9, 0.1, 1.0);
+    private static final ModConfigSpec.DoubleValue SHORT_FEE = BUILDER.comment("Percent of the position's value charged per day to keep a short open").defineInRange("shortDailyFeePercent", 0.5, 0.0, 100.0);
     private static final ModConfigSpec.DoubleValue MARGIN_WARN = BUILDER.comment("Warn when holdings fall below this multiple of the loan").defineInRange("marginWarnRatio", 1.25, 1.0, 100.0);
     private static final ModConfigSpec.DoubleValue MARGIN_LIQUIDATE = BUILDER.comment("Sell everything and repay when holdings fall below this multiple of the loan").defineInRange("marginLiquidateRatio", 1.10, 1.0, 100.0);
 
@@ -93,6 +96,9 @@ public final class Config {
     static long paymentRequestMillis() { return PAYMENT_REQUEST.get() * 1000L; }
     static double loanLimit() { return LOAN_LIMIT.get(); }
     static double marginMultiple() { return MARGIN_MULTIPLE.get(); }
+    static double shortDeposit() { return SHORT_DEPOSIT.get(); }
+    static double shortClose() { return SHORT_CLOSE.get(); }
+    static double shortFee() { return SHORT_FEE.get(); }
     static double marginInterest() { return MARGIN_INTEREST.get(); }
     static double marginWarn() { return Math.max(MARGIN_WARN.get(), MARGIN_LIQUIDATE.get()); }
     static double marginLiquidate() { return MARGIN_LIQUIDATE.get(); }

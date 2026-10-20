@@ -32,7 +32,7 @@ final class Commands {
     private static final DynamicCommandExceptionType BAD_PLAYER =
             new DynamicCommandExceptionType(name -> Component.translatable("pluginless.player.invalid", name));
     /** What /pluginless lists, in this order. Add every new root command here and a pluginless.help.<name> line to the lang file. */
-    private static final String[] LISTED = {"balance", "pay", "baltop", "roth", "rank", "eco", "kit", "bank", "qol", "spawn", "setspawn", "home", "sethome", "delhome", "homes", "tpa", "tpahere", "tpaccept", "tpdeny", "rtp", "back", "warp", "setwarp", "delwarp", "cosmetics", "nick", "realname", "namecolor", "namegradient", "skull", "hat", "nametitle", "cosmetic", "sell", "worth", "taxes", "ah", "market", "company", "shops", "shop", "stock", "margin", "shares"};
+    private static final String[] LISTED = {"balance", "pay", "baltop", "roth", "rank", "eco", "kit", "bank", "qol", "spawn", "setspawn", "home", "sethome", "delhome", "homes", "tpa", "tpahere", "tpaccept", "tpdeny", "rtp", "back", "warp", "setwarp", "delwarp", "cosmetics", "nick", "realname", "namecolor", "namegradient", "skull", "hat", "nametitle", "cosmetic", "sell", "worth", "taxes", "ah", "market", "company", "shops", "shop", "stock", "margin", "short", "shares"};
 
     static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         FeatureCommands.register(dispatcher);

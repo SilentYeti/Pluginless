@@ -782,9 +782,38 @@ final class SelfTest {
             state.price = 20; as(alice, "margin borrow 900"); state.price = 9.9; long cash = accounts.balance(a);
             Margin.tick(server, System.currentTimeMillis()); long sold = Stocks.quote(stock, state, false) * 100;
             check("a forced sale that covers the loan pays the rest to the player", () -> Margin.loan(server, a) == 0 && Bank.debt(server, a) == 0 && accounts.balance(a) == cash + sold - 900_00);
+
+            // Short selling: pressure is off, so the sell quote is 1% under the price and the buy quote 1% over.
+            state.price = 10; accounts.set(a, 5_000_00); accounts.set(Accounts.ESCROW, 0); long entry = 100 * 9_90, deposit = entry / 2;
+            as(alice, "short open TEST 100");
+            check("a short sells at the sell quote and puts up the security in escrow", () -> Shorts.position(server, a, "TEST") != null && Shorts.position(server, a, "TEST").entry() == entry
+                    && Shorts.position(server, a, "TEST").deposit() == deposit && accounts.balance(a) == 5_000_00 - deposit && accounts.balance(Accounts.ESCROW) == deposit);
+            as(alice, "short open TEST 10"); check("only one short per stock", () -> Shorts.position(server, a, "TEST").shares() == 100);
+            check("short interest is shown on the stock page", () -> output(alice.createCommandSourceStack(), "stock info TEST").contains("Sold short: 100"));
+            state.price = 5; long gain = entry - 100 * 5_05;
+            as(alice, "short close TEST");
+            check("a short that falls in price pays the profit and returns the security", () -> Shorts.position(server, a, "TEST") == null && accounts.balance(a) == 5_000_00 + gain && accounts.balance(Accounts.ESCROW) == 0);
+            state.price = 10; accounts.set(a, 5_000_00); as(alice, "short open TEST 100");
+            Shorts.tick(server, System.currentTimeMillis() + 86_400_000L); long fee = Math.round(entry * 0.5 / 100);
+            check("the daily fee is taken from the security", () -> Shorts.position(server, a, "TEST").deposit() == deposit - fee && accounts.balance(Accounts.ESCROW) == deposit - fee);
+            server.getCommands().performPrefixedCommand(console, "stock freeze TEST"); state.price = 40; Shorts.tick(server, System.currentTimeMillis());
+            check("a frozen stock cannot be covered, so a losing short waits", () -> Shorts.position(server, a, "TEST") != null);
+            server.getCommands().performPrefixedCommand(console, "stock unfreeze TEST");
+            long remaining = deposit - fee, loss = 100 * 40_40 - entry;
+            Shorts.tick(server, System.currentTimeMillis());
+            check("a short whose losses reach the security is closed and the shortfall becomes bank debt", () -> Shorts.position(server, a, "TEST") == null
+                    && Bank.debt(server, a) == loss - remaining && accounts.balance(Accounts.ESCROW) == 0 && accounts.balance(a) == 5_000_00 - deposit);
+            as(alice, "short open TEST 1"); check("a debtor cannot open a short", () -> Shorts.position(server, a, "TEST") == null);
+            Bank.repay(server, a, Bank.debt(server, a));
+            check("the short codec preserves a position", () -> {
+                state.price = 10; as(alice, "short open TEST 5");
+                var copy = Shorts.CODEC.parse(JsonOps.INSTANCE, Shorts.CODEC.encodeStart(JsonOps.INSTANCE, Shorts.all(server)).getOrThrow()).getOrThrow();
+                return copy.equals(Shorts.all(server));
+            });
         } finally {
             StockExchange.config = configured;
             StockExchange.store(server).value.holdings.remove(a);
+            Shorts.all(server).remove(a);
         }
     }
 
