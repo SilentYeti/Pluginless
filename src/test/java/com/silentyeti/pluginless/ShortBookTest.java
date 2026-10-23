@@ -42,4 +42,61 @@ class ShortBookTest {
         assertEquals(new ShortBook.Settlement(0, 500, 0, 100), ShortBook.settle(500, -600));
         assertEquals(new ShortBook.Settlement(500, 0, 0, 0), ShortBook.settle(500, 0));
     }
+
+    private final java.util.UUID player = java.util.UUID.randomUUID();
+
+    private java.util.Map<java.util.UUID, Long> funded(long escrow) {
+        var balances = new java.util.HashMap<java.util.UUID, Long>();
+        balances.put(Accounts.ESCROW, escrow);
+        return balances;
+    }
+
+    @Test
+    void aLossBeyondTheDepositSplitsTheDepositAndRecordsTheDebtOnce() {
+        var balances = funded(500);
+        var accounts = new Accounts(balances, 100, () -> {});
+        var owed = new long[1];
+        assertTrue(ShortBook.pay(accounts, player, ShortBook.settle(500, -800), cents -> false, cents -> { owed[0] += cents; return true; }));
+        assertEquals(300, owed[0]);
+        assertEquals(500, accounts.balance(Accounts.SERVER));
+        assertEquals(0, accounts.balance(Accounts.ESCROW));
+    }
+
+    @Test
+    void aFailedDebtRecordPutsTheEscrowBack() {
+        var balances = funded(500);
+        var accounts = new Accounts(balances, 100, () -> {});
+        assertFalse(ShortBook.pay(accounts, player, ShortBook.settle(500, -800), cents -> false, cents -> false));
+        assertEquals(500, accounts.balance(Accounts.ESCROW));
+        assertEquals(0, accounts.balance(Accounts.SERVER));
+        assertEquals(100, accounts.balance(player));
+    }
+
+    @Test
+    void aFailedProfitPayoutPutsTheDepositBack() {
+        var balances = funded(500);
+        var accounts = new Accounts(balances, 100, () -> {});
+        assertFalse(ShortBook.pay(accounts, player, ShortBook.settle(500, 200), cents -> false, cents -> true));
+        assertEquals(500, accounts.balance(Accounts.ESCROW));
+        assertEquals(100, accounts.balance(player));
+        var paid = new long[1];
+        assertTrue(ShortBook.pay(accounts, player, ShortBook.settle(500, 200), cents -> { paid[0] = cents; return true; }, cents -> true));
+        assertEquals(200, paid[0]);
+        assertEquals(600, accounts.balance(player));
+    }
+
+    @Test
+    void anOverflowingServerOrPlayerBalanceUndoesTheReleaseBeforeIt() {
+        var balances = funded(500);
+        balances.put(player, Long.MAX_VALUE - 100);
+        var accounts = new Accounts(balances, 100, () -> {});
+        assertFalse(ShortBook.pay(accounts, player, ShortBook.settle(500, -200), cents -> true, cents -> true));
+        assertEquals(500, accounts.balance(Accounts.ESCROW));
+        assertEquals(0, accounts.balance(Accounts.SERVER));
+        balances.put(player, 100L);
+        balances.put(Accounts.SERVER, Long.MAX_VALUE - 10);
+        assertFalse(ShortBook.pay(accounts, player, ShortBook.settle(500, -200), cents -> true, cents -> true));
+        assertEquals(500, accounts.balance(Accounts.ESCROW));
+        assertEquals(100, accounts.balance(player));
+    }
 }

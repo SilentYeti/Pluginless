@@ -1,5 +1,8 @@
 package com.silentyeti.pluginless;
 
+import java.util.UUID;
+import java.util.function.LongPredicate;
+
 /** The short-selling rules, in cents and ratios, with no server in sight so they can be tested alone. */
 public final class ShortBook {
     /** entry is what the short sale fetched; deposit is the security still held; updated is when the fee was last charged. */
@@ -31,6 +34,24 @@ public final class ShortBook {
         if (pnl >= 0) return new Settlement(deposit, 0, pnl, 0);
         long loss = -pnl, lost = Math.min(deposit, loss);
         return new Settlement(deposit - lost, lost, 0, loss - lost);
+    }
+
+    /**
+     * Moves the settlement money all-or-nothing: the reversible escrow releases first, the one step that cannot be undone (the profit payout or the debt record) last.
+     * When any step fails, what already moved goes back and false is returned, so the position stays and the close can be retried.
+     */
+    public static boolean pay(Accounts accounts, UUID player, Settlement settlement, LongPredicate payout, LongPredicate debt) {
+        long toServer = settlement.toServer(), toPlayer = settlement.toPlayer();
+        if (toServer > 0 && !accounts.release(Accounts.ESCROW, Accounts.SERVER, toServer)) return false;
+        if (toPlayer > 0 && !accounts.release(Accounts.ESCROW, player, toPlayer)) {
+            if (toServer > 0) accounts.release(Accounts.SERVER, Accounts.ESCROW, toServer);
+            return false;
+        }
+        boolean last = settlement.profit() > 0 ? payout.test(settlement.profit()) : settlement.shortfall() <= 0 || debt.test(settlement.shortfall());
+        if (last) return true;
+        if (toPlayer > 0) accounts.release(player, Accounts.ESCROW, toPlayer);
+        if (toServer > 0) accounts.release(Accounts.SERVER, Accounts.ESCROW, toServer);
+        return false;
     }
 
     private ShortBook() {}

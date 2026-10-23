@@ -119,26 +119,35 @@ public final class AuctionBook {
         return true;
     }
 
-    /** Ends what is over: an auction with a bid is paid out of escrow (tax from the final price by seller), anything else goes back to its seller. */
+    /**
+     * Ends what is over: an auction with a bid is paid out of escrow (tax from the final price by seller), anything else goes back to its seller.
+     * A payment that fails (an overflowing balance) undoes the other and leaves the listing for the next try; only settled listings are returned.
+     */
     public List<Listing> expire(long now, Accounts accounts, ToLongBiFunction<UUID, Long> tax) {
         var expired = listings.values().stream().filter(listing -> now >= listing.expires()).toList();
+        var settled = new ArrayList<Listing>();
         for (var listing : expired) {
             if (listing.bidder() != null) {
-                long cut = Math.min(tax.applyAsLong(listing.seller(), listing.bid()), listing.bid());
-                if (cut > 0) accounts.release(Accounts.ESCROW, Accounts.SERVER, cut);
-                if (listing.bid() > cut) accounts.transfer(Accounts.ESCROW, listing.seller(), listing.bid() - cut);
+                long cut = Math.max(0, Math.min(tax.applyAsLong(listing.seller(), listing.bid()), listing.bid()));
+                if (cut > 0 && !accounts.release(Accounts.ESCROW, Accounts.SERVER, cut)) continue;
+                if (listing.bid() > cut && !accounts.transfer(Accounts.ESCROW, listing.seller(), listing.bid() - cut)) {
+                    if (cut > 0) accounts.release(Accounts.SERVER, Accounts.ESCROW, cut);
+                    continue;
+                }
                 listings.remove(listing.id());
                 boxes.computeIfAbsent(listing.bidder(), key -> new ArrayList<>()).add(listing.item());
                 notices.computeIfAbsent(listing.seller(), key -> new ArrayList<>()).add(new Notice("sold", listing.name(), listing.bid() - cut));
                 notices.computeIfAbsent(listing.bidder(), key -> new ArrayList<>()).add(new Notice("won", listing.name(), listing.bid()));
                 record(listing, listing.bid(), now);
+                settled.add(listing);
                 continue;
             }
             listings.remove(listing.id());
             boxes.computeIfAbsent(listing.seller(), key -> new ArrayList<>()).add(listing.item());
             notices.computeIfAbsent(listing.seller(), key -> new ArrayList<>()).add(new Notice("expired", listing.name(), 0));
+            settled.add(listing);
         }
-        return expired;
+        return settled;
     }
 
     /** The oldest boxed item, removed from the box; null when the box is empty. */
