@@ -127,7 +127,9 @@ final class FeatureCommands {
             var target = Commands.one(ctx);
             return action(ctx, player -> Cosmetics.skull(player, target), "cosmetic");
         })));
-        dispatcher.register(literal("hat").executes(ctx -> action(ctx, Cosmetics::hat, "cosmetic")));
+        dispatcher.register(literal("hat").executes(ctx -> action(ctx, Cosmetics::hat, "cosmetic"))
+                .then(argument("slot", IntegerArgumentType.integer(0, 35)).executes(ctx ->
+                        action(ctx, player -> Cosmetics.hat(player, IntegerArgumentType.getInteger(ctx, "slot")), "cosmetic"))));
         dispatcher.register(literal("nametitle").executes(ctx -> {
                     ctx.getSource().sendSuccess(() -> Component.translatable("pluginless.cosmetic.titles", String.join(", ", Features.settings.titles.keySet())), false); return 1;
                 }).then(argument("name", StringArgumentType.word())

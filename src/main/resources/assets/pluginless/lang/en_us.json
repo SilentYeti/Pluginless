@@ -167,7 +167,7 @@
   "pluginless.help.namecolor": "Set a rank-unlocked name colour, such as #ff8800, or off",
   "pluginless.help.namegradient": "Set a rank-unlocked gradient, such as #ff0000 #0000ff, or off",
   "pluginless.help.skull": "Get a player’s head with rank access and an optional fee",
-  "pluginless.help.hat": "Wear one held item in an empty helmet slot",
+  "pluginless.help.hat": "Wear one held item or inventory slot 0-35 in an empty helmet slot",
   "pluginless.help.nametitle": "List configured titles or choose a rank-unlocked title; off clears it",
   "pluginless.bank.obligation": "\n%s | Debt +%s | %s",
   "pluginless.qol.costs": "\nConfigured command fees: %s",
