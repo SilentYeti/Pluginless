@@ -81,7 +81,49 @@ final class StocksPage implements PdaPage {
         }
         shorts.add("positions", positions);
         view.add("shorts", shorts);
+        view.add("shares", shares(server, id));
         return view;
+    }
+
+    /** Company shares: the companies that have shares out (or that you hold), their order book tops, and your own orders. */
+    private static JsonObject shares(MinecraftServer server, UUID id) {
+        var result = new JsonObject();
+        var book = Shares.store(server).value;
+        var companies = new JsonArray();
+        var names = new HashMap<String, String>();
+        for (var company : Companies.store(server).value.companies.values()) {
+            long outstanding = book.outstanding(company.id), held = book.held(company.id, id);
+            names.put(ShareBook.asset(company.id), company.name);
+            if (outstanding == 0 && held == 0) continue;
+            var asset = ShareBook.asset(company.id);
+            var asks = book.market.side(asset, false);
+            var bids = book.market.side(asset, true);
+            var row = new JsonObject();
+            row.addProperty("name", company.name);
+            row.addProperty("held", held);
+            row.addProperty("votes", book.votes(company.id).getOrDefault(id, 0L));
+            row.addProperty("outstanding", outstanding);
+            row.addProperty("ask", asks.isEmpty() ? 0 : asks.get(0).price());
+            row.addProperty("askQuantity", asks.isEmpty() ? 0 : asks.get(0).remaining());
+            row.addProperty("bid", bids.isEmpty() ? 0 : bids.get(0).price());
+            row.addProperty("bidQuantity", bids.isEmpty() ? 0 : bids.get(0).remaining());
+            row.addProperty("owner", id.equals(company.owner));
+            companies.add(row);
+        }
+        result.add("companies", companies);
+        var orders = new JsonArray();
+        for (var order : book.market.orders.values()) {
+            if (!order.owner().equals(id) || !names.containsKey(order.asset())) continue;
+            var row = new JsonObject();
+            row.addProperty("id", order.id());
+            row.addProperty("company", names.get(order.asset()));
+            row.addProperty("buy", order.buy());
+            row.addProperty("quantity", order.remaining());
+            row.addProperty("price", order.price());
+            orders.add(row);
+        }
+        result.add("orders", orders);
+        return result;
     }
 
     public Result act(ServerPlayer player, String verb, List<String> args, int slot) {
@@ -109,10 +151,38 @@ final class StocksPage implements PdaPage {
                 var amount = args.size() == 1 ? PdaCommands.amount(args.get(0)) : null;
                 return amount == null ? Result.fail("pluginless.pda.invalid") : PdaCommands.run(player, "margin " + verb + " " + amount);
             }
+            case "sbuy", "ssell" -> {
+                var company = args.size() == 3 ? company(player, args.get(0)) : null;
+                var shares = args.size() == 3 ? shares(args.get(1)) : null;
+                var price = args.size() == 3 ? PdaCommands.amount(args.get(2)) : null;
+                return company == null || shares == null || price == null ? Result.fail("pluginless.pda.invalid")
+                        : PdaCommands.run(player, "shares " + verb.substring(1) + " " + company + " " + shares + " " + price);
+            }
+            case "scancel" -> {
+                var order = args.size() == 1 ? shares(args.get(0)) : null;
+                return order == null ? Result.fail("pluginless.pda.invalid") : PdaCommands.run(player, "shares cancel " + order);
+            }
+            case "takeover" -> {
+                var company = args.size() == 1 ? company(player, args.get(0)) : null;
+                return company == null ? Result.fail("pluginless.pda.invalid") : PdaCommands.run(player, "shares takeover " + company);
+            }
+            case "dividend" -> {
+                var company = args.size() == 2 ? company(player, args.get(0)) : null;
+                var amount = args.size() == 2 ? PdaCommands.amount(args.get(1)) : null;
+                return company == null || amount == null ? Result.fail("pluginless.pda.invalid") : PdaCommands.run(player, "shares dividend " + company + " " + amount);
+            }
             default -> {
                 return Result.fail("pluginless.pda.invalid");
             }
         }
+    }
+
+    /** The name of an existing company as the command takes it (one word); null for anything else. */
+    private static String company(ServerPlayer player, String value) {
+        var server = player.level().getServer();
+        if (server == null || PdaCommands.word(value) == null) return null;
+        var company = Companies.store(server).value.company(value);
+        return company == null ? null : company.name;
     }
 
     private static String ticker(String value) {

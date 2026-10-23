@@ -32,14 +32,19 @@ final class StocksClientPage implements PdaClientPage {
     private static final Subject<StocksClientPage> STK = Subject.register("pda_pl_stk", StocksClientPage.class, () -> INSTANCE);
     private static final Subject<Stock> STOCK = Subject.register("pda_pl_stk_stock", Stock.class);
     private static final Subject<Position> POSITION = Subject.register("pda_pl_stk_pos", Position.class);
+    private static final Subject<Firm> FIRM = Subject.register("pda_pl_stk_firm", Firm.class);
+    private static final Subject<Order> ORDER = Subject.register("pda_pl_stk_order", Order.class);
     private static final AmountBar BAR = new AmountBar("pda_pl_stk", StocksClientPage::view, 100_000, 100, 1_000, 10_000, 100_000);
     private static final CountBar COUNT = new CountBar("pda_pl_stk", () -> { }, 1, 10, 100, 1_000);
 
     record Stock(String ticker, String label, boolean selected) {}
     record Position(String ticker, String label, boolean selected) {}
+    record Firm(String name, String label, boolean selected) {}
+    record Order(String id, String label) {}
 
-    private static int tab; // 0 market, 1 margin, 2 shorts
+    private static int tab; // 0 market, 1 margin, 2 shorts, 3 shares
     private static String selectedPosition = "";
+    private static String company = "";
     private static boolean opened;
 
     public String id() { return "stocks"; }
@@ -90,6 +95,7 @@ final class StocksClientPage implements PdaClientPage {
         Signals.bool(STK, "tab_market", s -> tab == 0);
         Signals.bool(STK, "tab_margin", s -> tab == 1);
         Signals.bool(STK, "tab_shorts", s -> tab == 2);
+        Signals.bool(STK, "tab_shares", s -> tab == 3);
         Signals.text(STK, "portfolio", 28, s -> "HOLDINGS " + money(holdings()));
         Signals.items(STK, "stocks", s -> stocks(), STOCK);
         Signals.items(STK, "positions", s -> positions(), POSITION);
@@ -128,10 +134,65 @@ final class StocksClientPage implements PdaClientPage {
                 + money(Math.round(decimal(object(view(), "shorts"), "deposit") * number("sell") * COUNT.count)));
         Signals.bool(STK, "can_open", s -> !ticker().isEmpty() && !frozen());
         Signals.bool(STK, "can_close", s -> !selectedPosition.isEmpty());
+        // company shares
+        Signals.items(STK, "firms", s -> firms(), FIRM);
+        Signals.items(STK, "orders", s -> orders(), ORDER);
+        Signals.bool(STK, "no_firms", s -> firms().isEmpty());
+        Signals.bool(STK, "no_orders", s -> orders().isEmpty());
+        Signals.text(STK, "c_title", 40, s -> company.isEmpty() ? "SELECT A COMPANY" : company);
+        Signals.text(STK, "c_held", 60, s -> company.isEmpty() ? "" : "YOU HOLD " + PdaClientState.number(firm(), "held") + " OF " + PdaClientState.number(firm(), "outstanding")
+                + " SHARES, VOTES " + PdaClientState.number(firm(), "votes"));
+        Signals.text(STK, "c_book", 60, s -> company.isEmpty() ? "" : "ASK " + level("ask") + "  BID " + level("bid"));
+        Signals.text(STK, "c_total", 48, s -> "PRICE X COUNT " + money(BAR.amount * COUNT.count));
+        Signals.bool(STK, "c_ready", s -> !company.isEmpty() && BAR.amount > 0);
+        Signals.bool(STK, "c_takeover", s -> !company.isEmpty() && !flag(firm(), "owner")
+                && PdaClientState.number(firm(), "votes") * 2 > PdaClientState.number(firm(), "outstanding"));
+        Signals.bool(STK, "c_owner", s -> !company.isEmpty() && BAR.amount > 0 && flag(firm(), "owner"));
+        Signals.text(FIRM, "label", 40, Firm::label);
+        Signals.bool(FIRM, "selected", Firm::selected);
+        Signals.text(ORDER, "label", 60, Order::label);
         Signals.text(STOCK, "label", 40, Stock::label);
         Signals.bool(STOCK, "selected", Stock::selected);
         Signals.text(POSITION, "label", 60, Position::label);
         Signals.bool(POSITION, "selected", Position::selected);
+    }
+
+    private static JsonObject shares() { return object(view(), "shares"); }
+
+    private static boolean flag(JsonObject o, String key) { return o.has(key) && o.get(key).getAsBoolean(); }
+
+    private static JsonObject firm() {
+        for (var element : array(shares(), "companies")) {
+            var row = element.getAsJsonObject();
+            if (PdaClientState.text(row, "name").equals(company)) return row;
+        }
+        return new JsonObject();
+    }
+
+    private static String level(String side) {
+        long price = PdaClientState.number(firm(), side);
+        return price == 0 ? "-" : money(price) + " X" + PdaClientState.number(firm(), side + "Quantity");
+    }
+
+    private static List<Firm> firms() {
+        var result = new ArrayList<Firm>();
+        for (var element : array(shares(), "companies")) {
+            var row = element.getAsJsonObject();
+            var name = PdaClientState.text(row, "name");
+            long held = PdaClientState.number(row, "held");
+            result.add(new Firm(name, shorten(name, 14) + (held > 0 ? " X" + held : ""), name.equals(company)));
+        }
+        return result;
+    }
+
+    private static List<Order> orders() {
+        var result = new ArrayList<Order>();
+        for (var element : array(shares(), "orders")) {
+            var row = element.getAsJsonObject();
+            result.add(new Order(Long.toString(PdaClientState.number(row, "id")), (flag(row, "buy") ? "BUY " : "SELL ") + PdaClientState.number(row, "quantity") + " "
+                    + shorten(PdaClientState.text(row, "company"), 12) + " @" + money(PdaClientState.number(row, "price"))));
+        }
+        return result;
     }
 
     private static String shorten(String name, int max) { return name.length() <= max ? name : name.substring(0, max - 1) + "."; }
@@ -168,6 +229,7 @@ final class StocksClientPage implements PdaClientPage {
         tree.add(at(8, 4, chip("MARKET", "pda_pl_stk.tab_market", () -> tab = 0)));
         tree.add(at(50, 4, chip("MARGIN", "pda_pl_stk.tab_margin", () -> tab = 1)));
         tree.add(at(92, 4, chip("SHORTS", "pda_pl_stk.tab_shorts", () -> tab = 2)));
+        tree.add(at(140, 4, chip("SHARES", "pda_pl_stk.tab_shares", () -> tab = 3)));
         tree.add(at(250, 7, text("{pda_pl_stk.portfolio}", PdaShell.DIM)));
 
         tree.add(when("pda_pl_stk.tab_market", stack(
@@ -202,6 +264,29 @@ final class StocksClientPage implements PdaClientPage {
                 at(8, 132, text("{pda_pl_stk.s_new}", PdaShell.TEXT)),
                 stack(COUNT.widgets(8, 146).toArray(WidgetDef[]::new)),
                 at(176, 146, button("OPEN SHORT", "pda_pl_stk.can_open", () -> PdaClientSetup.send("stocks", "open", ticker(), Long.toString(COUNT.count)))))));
+
+        UiAction pickFirm = item -> company = ((Firm) item).name();
+        UiAction cancel = item -> PdaClientSetup.send("stocks", "scancel", ((Order) item).id());
+        tree.add(when("pda_pl_stk.tab_shares", stack(
+                at(8, 20, list("pda_pl_stk.firms", 11, 1, "150", "72", PdaShell.EDGE,
+                        PdaWidgets.row("{pda_pl_stk_firm.label}", 138, "pda_pl_stk_firm.selected", pickFirm))),
+                when("pda_pl_stk.no_firms", at(12, 24, text("NO COMPANY HAS SHARES", PdaShell.DIM))),
+                at(166, 20, text("{pda_pl_stk.c_title}", PdaShell.ACCENT)),
+                at(166, 32, text("{pda_pl_stk.c_held}", PdaShell.TEXT)),
+                at(166, 44, text("{pda_pl_stk.c_book}", PdaShell.TEXT)),
+                at(166, 56, text("{pda_pl_stk.c_total}", PdaShell.DIM)),
+                at(166, 70, button("TAKE OVER", "pda_pl_stk.c_takeover", () -> PdaClientSetup.send("stocks", "takeover", company))),
+                at(8, 98, text("PRICE PER SHARE", PdaShell.DIM)),
+                stack(BAR.widgets(8, 108, new AmountBar.Shortcut("ASK", 22, () -> PdaClientState.number(firm(), "ask")),
+                        new AmountBar.Shortcut("BID", 22, () -> PdaClientState.number(firm(), "bid"))).toArray(WidgetDef[]::new)),
+                stack(COUNT.widgets(8, 128).toArray(WidgetDef[]::new)),
+                at(176, 128, button("BUY", "pda_pl_stk.c_ready", () -> PdaClientSetup.send("stocks", "sbuy", company, Long.toString(COUNT.count), Long.toString(BAR.amount)))),
+                at(206, 128, button("SELL", "pda_pl_stk.c_ready", () -> PdaClientSetup.send("stocks", "ssell", company, Long.toString(COUNT.count), Long.toString(BAR.amount)))),
+                at(240, 128, button("DIVIDEND", "pda_pl_stk.c_owner", () -> PdaClientSetup.send("stocks", "dividend", company, Long.toString(BAR.amount)))),
+                at(8, 146, text("YOUR ORDERS (CLICK TO CANCEL)", PdaShell.DIM)),
+                when("pda_pl_stk.no_orders", at(12, 158, text("NONE", PdaShell.DIM)),
+                        at(8, 158, list("pda_pl_stk.orders", 11, 1, "368", "32", PdaShell.EDGE,
+                                PdaWidgets.row("{pda_pl_stk_order.label}", 356, "false", cancel)))))));
 
         tree.add(when("pda_pl_stk.tab_margin", stack(BAR.widgets(8, 90).toArray(WidgetDef[]::new))));
         return stack(tree.toArray(WidgetDef[]::new));
