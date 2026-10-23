@@ -2,8 +2,15 @@ package com.silentyeti.pluginless;
 
 /** The margin rules, in cents and ratios, with no server in sight so they can be tested alone. */
 public final class MarginBook {
-    /** A loan is a plain debt plus whether the player has already been warned about it. */
-    public record Loan(Debts.Debt debt, boolean warned) {}
+    /**
+     * A loan is a plain debt plus whether the player has already been warned about it. Once a forced sale has sold the holdings,
+     * the proceeds are kept here until the loan is settled, so a failed payout or debt record can be retried without losing either.
+     */
+    public record Loan(Debts.Debt debt, boolean warned, java.util.Optional<Long> proceeds) {
+        public Loan(Debts.Debt debt, boolean warned) { this(debt, warned, java.util.Optional.empty()); }
+        public Loan withProceeds(long cents) { return new Loan(debt, warned, java.util.Optional.of(cents)); }
+        public boolean sold() { return proceeds.isPresent(); }
+    }
 
     public enum Health { OK, WARN, LIQUIDATE }
 

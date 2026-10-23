@@ -80,6 +80,59 @@ class AuctionBookTest {
     }
 
     @Test
+    void aSellerPaymentThatOverflowsUndoesTheTaxAndKeepsTheListingForARetry() {
+        var balances = new HashMap<UUID, Long>();
+        var full = new Accounts(balances, 100, () -> {});
+        long id = auction();
+        assertNull(book.bid(buyer, id, 50, 30, 20, 10, full));
+        balances.put(seller, Long.MAX_VALUE - 10);
+        assertTrue(book.expire(1_000_000, full, (who, price) -> price / 10).isEmpty());
+        assertTrue(book.listings.containsKey(id));
+        assertEquals(50, full.balance(Accounts.ESCROW));
+        assertEquals(0, full.balance(Accounts.SERVER));
+        assertNull(book.boxes.get(buyer));
+        assertNull(book.notices.get(seller));
+        assertTrue(book.history.isEmpty());
+        balances.put(seller, 100L);
+        assertEquals(1, book.expire(1_100_000, full, (who, price) -> price / 10).size());
+        assertEquals(5, full.balance(Accounts.SERVER));
+        assertEquals(145, full.balance(seller));
+        assertEquals(0, full.balance(Accounts.ESCROW));
+        assertEquals(List.of("ITEM"), book.boxes.get(buyer));
+    }
+
+    @Test
+    void aTaxPaymentThatOverflowsKeepsTheListingAndTheEscrow() {
+        var balances = new HashMap<UUID, Long>();
+        var full = new Accounts(balances, 100, () -> {});
+        long id = auction();
+        assertNull(book.bid(buyer, id, 50, 30, 20, 10, full));
+        balances.put(Accounts.SERVER, Long.MAX_VALUE - 2);
+        assertTrue(book.expire(1_000_000, full, (who, price) -> price / 10).isEmpty());
+        assertTrue(book.listings.containsKey(id));
+        assertEquals(50, full.balance(Accounts.ESCROW));
+        assertEquals(100, full.balance(seller));
+        assertNull(book.boxes.get(buyer));
+        assertTrue(book.history.isEmpty());
+    }
+
+    @Test
+    void oneStuckAuctionDoesNotBlockTheOthers() {
+        var balances = new HashMap<UUID, Long>();
+        var full = new Accounts(balances, 100, () -> {});
+        var stuckSeller = UUID.randomUUID();
+        long stuck = book.listAuction(stuckSeller, "STUCK", "minecraft:gold_ingot", "Gold", 1, 50, 0, 1_000_000).id();
+        long fine = auction();
+        assertNull(book.bid(buyer, stuck, 50, 30, 20, 10, full));
+        assertNull(book.bid(rival, fine, 50, 30, 20, 10, full));
+        balances.put(stuckSeller, Long.MAX_VALUE);
+        var settled = book.expire(1_000_000, full, (who, price) -> price / 10);
+        assertEquals(List.of(fine), settled.stream().map(AuctionBook.Listing::id).toList());
+        assertTrue(book.listings.containsKey(stuck));
+        assertEquals(50, full.balance(Accounts.ESCROW));
+    }
+
+    @Test
     void anAuctionWithoutBidsGoesBackToTheSeller() {
         long id = auction();
         assertEquals(1, expire(1_000_000).size());

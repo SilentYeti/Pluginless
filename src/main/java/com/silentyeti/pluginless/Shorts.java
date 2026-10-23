@@ -65,7 +65,7 @@ public final class Shorts {
         return position != null && cover(server, player.getUUID(), position, false);
     }
 
-    /** One step: buy back at the buy quote, settle the money, drop the position. A payout that fails changes nothing, so it can be retried. */
+    /** One step: buy back at the buy quote, settle the money, drop the position. Any payment or debt record that fails undoes the rest and changes nothing, so it can be retried. */
     private static boolean cover(MinecraftServer server, UUID player, ShortBook.Position position, boolean forced) {
         var stock = StockExchange.config.stocks.get(position.ticker());
         var state = stock == null ? null : StockExchange.state(server, position.ticker());
@@ -73,12 +73,11 @@ public final class Shorts {
         double before = state.price;
         Stocks.pressure(stock, state, position.shares(), true);
         var result = ShortBook.settle(position.deposit(), ShortBook.pnl(position.entry(), Stocks.quote(stock, state, true) * position.shares()));
-        if (result.profit() > 0 && !Ledger.payout(server, player, result.profit(), "short.profit")) { state.price = before; return false; }
         var accounts = Ledger.of(server, player.toString(), "short.close");
-        if (result.toServer() > 0) accounts.release(Accounts.ESCROW, Accounts.SERVER, result.toServer());
-        if (result.toPlayer() > 0) accounts.release(Accounts.ESCROW, player, result.toPlayer());
-        if (result.shortfall() > 0 && !Bank.addDebt(server, player, result.shortfall(), "short"))
-            Pluginless.LOGGER.warn("short: could not record {} shortfall for {}", result.shortfall(), player);
+        if (!ShortBook.pay(accounts, player, result, cents -> Ledger.payout(server, player, cents, "short.profit"), cents -> Bank.addDebt(server, player, cents, "short"))) {
+            state.price = before;
+            return false;
+        }
         var store = positions(server);
         var own = store.value.get(player);
         own.remove(position.ticker());
