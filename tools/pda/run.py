@@ -46,6 +46,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--wflib', type=Path, default=ROOT.parent / 'WFLib-main')
     parser.add_argument('--apps', nargs='*', default=['wflib:terminal'], help='PDA IDs to open; missing/invisible apps fail')
+    parser.add_argument('--ranks', type=Path, help='ranks.json to start the server with (default: the mod\'s own)')
     parser.add_argument('--script', type=Path, help='JSON array: app/home/key/text/move/click/wait/screenshot actions')
     parser.add_argument('--skip-build', action='store_true', help='Use existing jars; manifest still records exact bytes')
     parser.add_argument('--show', action='store_true', help='Open on the desktop and keep running until Minecraft quits')
@@ -103,6 +104,9 @@ def main():
         game.mkdir()
         if mode == 'server':
             (game / 'eula.txt').write_text('eula=true\n')
+            if args.ranks:
+                (game / 'config' / 'pluginless').mkdir(parents=True)
+                shutil.copy2(args.ranks, game / 'config' / 'pluginless' / 'ranks.json')
             flat = json.dumps({'layers': [{'block': 'minecraft:bedrock', 'height': 1}, {'block': 'minecraft:dirt', 'height': 2}, {'block': 'minecraft:grass_block', 'height': 1}], 'biome': 'minecraft:plains', 'lakes': False, 'features': False})
             (game / 'server.properties').write_text(f'generator-settings={flat}\nonline-mode=false\nserver-ip=127.0.0.1\nserver-port={port}\nlevel-seed=160016\nlevel-type=minecraft:flat\nspawn-protection=0\nview-distance=3\nsimulation-distance=3\nmax-tick-time=-1\n')
         else:
