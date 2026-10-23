@@ -291,6 +291,61 @@ final class SelfTest {
         check("/hat equips exactly one held item", () -> alice.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).getItem() == Items.DIAMOND && alice.getMainHandItem().getCount() == 1);
         alice.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.STONE)); as(alice, "hat");
         check("/hat preserves an occupied helmet slot and the held item", () -> alice.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).getItem() == Items.DIAMOND && alice.getMainHandItem().getItem() == Items.STONE);
+        cosmeticsPda(alice, accounts, normal, ranks);
+    }
+
+    private void cosmeticsPda(Tester alice, Accounts accounts, Ranks.Rank rank, Ranks ranks) {
+        var page = new CosmeticsPage();
+        var id = alice.getUUID();
+        check("PDA cosmetics snapshot uses live perk and inventory state", () -> page.view(server, alice).get("hat_allowed").getAsBoolean()
+                && !page.view(server, alice).get("head_empty").getAsBoolean() && page.view(server, alice).getAsJsonArray("slots").size() == 36);
+        check("PDA nickname intent goes through the existing service", () -> page.act(alice, "nick", List.of("PdaYeti"), -1).ok()
+                && Cosmetics.of(server, id).nick().equals("PdaYeti"));
+        rank.perks.put("nick", false);
+        check("PDA rejects a stale unlocked nickname snapshot", () -> !page.act(alice, "nick", List.of("ForgedYeti"), -1).ok()
+                && Cosmetics.of(server, id).nick().equals("PdaYeti"));
+        check("PDA still clears a nickname after its perk is lost", () -> page.act(alice, "nick", List.of("off"), -1).ok()
+                && Cosmetics.of(server, id).nick().isEmpty());
+        rank.perks.put("nick", true);
+        var deny = rank.deny;
+        try {
+            rank.deny = List.of("nick");
+            check("PDA cannot bypass command rank denial", () -> !page.act(alice, "nick", List.of("Forbidden"), -1).ok()
+                    && Cosmetics.of(server, id).nick().isEmpty());
+        } finally { rank.deny = deny; }
+        ranks.cooldowns.put("nick", 3600.0);
+        try {
+            page.act(alice, "nick", List.of("FirstPda"), -1);
+            check("PDA shares command cooldowns", () -> !page.act(alice, "nick", List.of("SecondPda"), -1).ok()
+                    && Cosmetics.of(server, id).nick().equals("FirstPda"));
+        } finally { ranks.cooldowns.remove("nick"); }
+        var saved = Cosmetics.of(server, id);
+        check("PDA rejects malformed colour markup without saving", () -> !page.act(alice, "color", List.of("#ff0000&l"), -1).ok()
+                && Cosmetics.of(server, id).equals(saved));
+        check("PDA rejects injected nicknames, selectors, extra arguments and unknown verbs", () ->
+                !page.act(alice, "nick", List.of("Alice kill @a"), -1).ok()
+                && !page.act(alice, "skull", List.of("@a"), -1).ok()
+                && !page.act(alice, "title", List.of("builder\nop round2_alice"), -1).ok()
+                && !page.act(alice, "color", List.of("&c", "ignored"), -1).ok()
+                && !page.act(alice, "gradient", List.of("#ff0000", "&k"), -1).ok()
+                && !page.act(alice, "op", List.of("round2_alice"), -1).ok()
+                && Cosmetics.of(server, id).equals(saved));
+        var head = net.minecraft.world.entity.EquipmentSlot.HEAD;
+        alice.setItemSlot(head, ItemStack.EMPTY);
+        alice.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.STONE));
+        alice.getInventory().setItem(35, new ItemStack(Items.EMERALD, 3));
+        check("PDA slot hat equips one server-side item and preserves the held item", () -> page.act(alice, "hat", List.of(), 35).ok()
+                && alice.getItemBySlot(head).getItem() == Items.EMERALD && alice.getInventory().getItem(35).getCount() == 2
+                && alice.getMainHandItem().getItem() == Items.STONE);
+        check("PDA cannot overwrite an occupied helmet or use a forged slot", () -> !page.act(alice, "hat", List.of(), 35).ok()
+                && !page.act(alice, "hat", List.of(), 40).ok() && alice.getInventory().getItem(35).getCount() == 2);
+        var price = SelfTest.<Double>configValue("SKULL_PRICE"); double oldPrice = price.get();
+        try {
+            price.set(1.0);
+            long before = accounts.balance(id); int heads = items(alice, Items.PLAYER_HEAD);
+            check("PDA self skull uses the server price and normal item delivery", () -> page.act(alice, "skull", List.of(), -1).ok()
+                    && accounts.balance(id) == before - 100 && items(alice, Items.PLAYER_HEAD) == heads + 1);
+        } finally { price.set(oldPrice); }
     }
 
     private static boolean headProfile(ServerPlayer player) {
