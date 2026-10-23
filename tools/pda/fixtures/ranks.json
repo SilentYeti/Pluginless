@@ -1,0 +1,18 @@
+{
+  "defaultRank": "default",
+  "ranks": {
+    "default": {
+      "perks": {"kit.starter": true, "kit.miner": true, "homes": 3, "loan_limit": 500, "cooldown.kit.miner": 7200},
+      "rewards": [{"id": "hourly", "hours": 1, "money": 2, "repeat": true}, {"id": "welcome", "hours": 0.001, "money": 5, "items": {"minecraft:bread": 4}, "repeat": false}],
+      "allow": [], "deny": []
+    },
+    "member": {"inherits": "default", "perks": {"homes": 5}, "rewards": [], "allow": [], "deny": []},
+    "vip": {"inherits": "member", "perks": {"homes": 10}, "rewards": [], "allow": [], "deny": []}
+  },
+  "cooldowns": {},
+  "kits": {
+    "starter": {"money": 10, "items": {"minecraft:bread": 3, "minecraft:iron_pickaxe": 1}, "cooldown": 3600},
+    "miner": {"money": 0, "items": {"minecraft:cobblestone": 64}, "cooldown": 86400}
+  },
+  "tracks": {"main": {"ranks": ["default", "member", "vip"], "autoHours": {"member": 5, "vip": 50}, "prices": {}}}
+}
