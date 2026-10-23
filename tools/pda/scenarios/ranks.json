@@ -1,0 +1,17 @@
+[
+  {"op": "home"},
+  {"op": "app", "id": "pluginless:pluginless"},
+  {"op": "wait", "seconds": 1},
+  {"op": "assert_page", "page": "home"},
+  {"op": "pointer", "x": 145, "y": 122},
+  {"op": "wait", "seconds": 0.3},
+  {"op": "click"},
+  {"op": "wait", "seconds": 1},
+  {"op": "assert_page", "page": "ranks"},
+  {"op": "screenshot", "name": "pluginless-ranks"},
+  {"op": "pointer", "x": 20, "y": 27},
+  {"op": "wait", "seconds": 0.3},
+  {"op": "click"},
+  {"op": "wait", "seconds": 0.6},
+  {"op": "assert_page", "page": "home"}
+]

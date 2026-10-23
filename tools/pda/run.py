@@ -46,9 +46,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--wflib', type=Path, default=ROOT.parent / 'WFLib-main')
     parser.add_argument('--apps', nargs='*', default=['wflib:terminal'], help='PDA IDs to open; missing/invisible apps fail')
-    parser.add_argument('--script', type=Path, help='JSON array: app/home/key/text/move/click/wait/screenshot actions')
+    parser.add_argument('--script', type=Path, action='append', default=[], help='JSON action array; repeat to run page scenarios in one instance')
     parser.add_argument('--skip-build', action='store_true', help='Use existing jars; manifest still records exact bytes')
     parser.add_argument('--show', action='store_true', help='Open on the desktop and keep running until Minecraft quits')
+    parser.add_argument('--pluginless-jar', type=Path, help='Use a built Pluginless jar from a page worker checkout')
     args = parser.parse_args()
     for executable in ('java', 'xdotool', *(() if args.show else ('Xvfb',))):
         if not shutil.which(executable):
@@ -59,14 +60,19 @@ def main():
     env = dict(os.environ, JAVA_HOME='/usr/lib/jvm/java-21-openjdk')
     if not args.show:
         env['LIBGL_ALWAYS_SOFTWARE'] = 'true'
-    steps_from_file = json.loads(args.script.read_text()) if args.script else []
-    if not isinstance(steps_from_file, list):
-        parser.error('--script must contain a JSON array')
+    steps_from_file = []
+    for script in args.script:
+        steps = json.loads(script.read_text())
+        if not isinstance(steps, list):
+            parser.error(f'{script} must contain a JSON array')
+        steps_from_file.extend(steps)
     if not args.skip_build:
         for project, task in ((wflib, 'jar'), (ROOT, ':1.21.1:jar')):
+            if project == ROOT and args.pluginless_jar:
+                continue
             subprocess.run(['sh', str(project / 'gradlew'), task, '--console=plain'], cwd=project, env=env, check=True)
     jars = {
-        'pluginlessJar': ROOT / 'versions/1.21.1/build/libs/pluginless-0.1.0+1.21.1.jar',
+        'pluginlessJar': args.pluginless_jar.resolve() if args.pluginless_jar else ROOT / 'versions/1.21.1/build/libs/pluginless-0.1.0+1.21.1.jar',
         'wflibJar': wflib / 'build/libs/wflib-1.8.36.jar',
         'ahfJar': cached('com.norwood', 'ahf-1.21.1-neoforge', '1.0.8-SNAPSHOT'),
         'ldlibJar': cached('com.lowdragmc.ldlib2', 'ldlib2-neoforge-1.21.1', '2.2.26'),
@@ -79,7 +85,16 @@ def main():
     print(f'PDA harness artifacts: {output}', flush=True)
     control = output / 'control'
     control.mkdir()
-    manifest = {name: {'path': str(path), 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()} for name, path in jars.items()}
+    (output / 'jars').mkdir()
+    manifest = {}
+    # A page worker may rebuild their original jar while this client/server pair is running.
+    for name, path in jars.items():
+        data = path.read_bytes()
+        (output / 'jars' / name).mkdir()
+        snapshot = output / 'jars' / name / path.name
+        snapshot.write_bytes(data)
+        manifest[name] = {'source': str(path), 'path': str(snapshot), 'sha256': hashlib.sha256(data).hexdigest()}
+        jars[name] = snapshot
     (output / 'jars.json').write_text(json.dumps(manifest, indent=2))
     with socket.socket() as probe:
         probe.bind(('127.0.0.1', 0))

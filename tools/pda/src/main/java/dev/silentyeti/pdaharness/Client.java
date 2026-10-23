@@ -54,6 +54,23 @@ public final class Client {
                         throw new IllegalStateException("PDA text field does not contain expected text");
                     }
                 }
+                case "assert_page" -> {
+                    if (!PdaClient.focused() || PdaClient.app() == null
+                            || !PdaClient.app().id().toString().equals("pluginless:pluginless")) {
+                        throw new IllegalStateException("Pluginless PDA app is not focused");
+                    }
+                    // The harness also runs against jars without PDA integration; keep that dependency optional.
+                    var state = Class.forName("com.silentyeti.pluginless.pda.PdaClientState", true,
+                            PdaClient.app().getClass().getClassLoader());
+                    String page = (String) state.getMethod("page").invoke(null);
+                    if (!page.equals(command.get("page").getAsString())) {
+                        throw new IllegalStateException("Expected page " + command.get("page").getAsString() + ", got " + page);
+                    }
+                    var view = (JsonObject) state.getMethod("view", String.class).invoke(null, page);
+                    if (!view.has("balance")) throw new IllegalStateException("No server snapshot for page " + page);
+                    Harness.write("result-" + id + ".json", Map.of("ok", true, "page", page, "view", view));
+                    return;
+                }
                 case "screenshot" -> {
                     int receipt = id;
                     Screenshot.grab(mc.gameDirectory, "capture-" + id + ".png", mc.getMainRenderTarget(),
