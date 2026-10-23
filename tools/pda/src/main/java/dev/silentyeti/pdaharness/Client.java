@@ -24,7 +24,7 @@ public final class Client {
         if (mc.player == null || mc.level == null) return;
         if (!ready && mc.screen == null && mc.player.tickCount > 40 && PdaClient.held()) {
             ready = true;
-            Harness.write("client-ready.json", Map.of("held", true));
+            Harness.write("client-ready.json", Map.of("held", true, "pid", ProcessHandle.current().pid()));
         }
         var action = Harness.CONTROL.resolve("action.json");
         if (!Files.exists(action)) return;

@@ -48,12 +48,17 @@ def main():
     parser.add_argument('--apps', nargs='*', default=['wflib:terminal'], help='PDA IDs to open; missing/invisible apps fail')
     parser.add_argument('--script', type=Path, help='JSON array: app/home/key/text/move/click/wait/screenshot actions')
     parser.add_argument('--skip-build', action='store_true', help='Use existing jars; manifest still records exact bytes')
+    parser.add_argument('--show', action='store_true', help='Open on the desktop and keep running until Minecraft quits')
     args = parser.parse_args()
-    for executable in ('java', 'Xvfb', 'xdotool'):
+    for executable in ('java', 'xdotool', *(() if args.show else ('Xvfb',))):
         if not shutil.which(executable):
             parser.error(f'{executable} is required')
     wflib = args.wflib.resolve()
-    env = dict(os.environ, JAVA_HOME='/usr/lib/jvm/java-21-openjdk', LIBGL_ALWAYS_SOFTWARE='true')
+    if args.show and not os.environ.get('DISPLAY'):
+        parser.error('--show requires the desktop DISPLAY (X11 or XWayland)')
+    env = dict(os.environ, JAVA_HOME='/usr/lib/jvm/java-21-openjdk')
+    if not args.show:
+        env['LIBGL_ALWAYS_SOFTWARE'] = 'true'
     steps_from_file = json.loads(args.script.read_text()) if args.script else []
     if not isinstance(steps_from_file, list):
         parser.error('--script must contain a JSON array')
@@ -111,15 +116,18 @@ def main():
         subprocess.run(['xdotool', *map(str, values)], env=env, check=True, capture_output=True)
 
     try:
-        display = next(number for number in range(200, 500) if not Path(f'/tmp/.X11-unix/X{number}').exists() and not Path(f'/tmp/.X{number}-lock').exists())
-        env['DISPLAY'] = f':{display}'
-        xvfb = spawn(['Xvfb', env['DISPLAY'], '-screen', '0', '1280x800x24', '-nolisten', 'tcp'], output, 'xvfb.log')
+        if not args.show:
+            display = next(number for number in range(200, 500) if not Path(f'/tmp/.X11-unix/X{number}').exists() and not Path(f'/tmp/.X{number}-lock').exists())
+            env['DISPLAY'] = f':{display}'
+            spawn(['Xvfb', env['DISPLAY'], '-screen', '0', '1280x800x24', '-nolisten', 'tcp'], output, 'xvfb.log')
         server = start_game('server')
-        seed = wait_for(control / 'server-ready.json', [server, xvfb])
+        seed = wait_for(control / 'server-ready.json', processes)
         client = start_game('client')
-        wait_for(control / 'client-ready.json', processes)
-        windows = subprocess.check_output(['xdotool', 'search', '--name', 'Minecraft'], env=env, text=True).splitlines()
+        ready = wait_for(control / 'client-ready.json', processes)
+        windows = subprocess.check_output(['xdotool', 'search', '--all', '--pid', str(ready['pid']), '--name', 'Minecraft'], env=env, text=True).splitlines()
         window = windows[-1]
+        if args.show:
+            xdo('windowactivate', '--sync', window)
         xdo('windowfocus', '--sync', window)
         xdo('mousemove', '--window', window, 640, 400)
         xdo('click', 3)
@@ -152,6 +160,11 @@ def main():
                 receipts.append(dict(step=step, result=receipt))
         (output / 'result.json').write_text(json.dumps({'passed': True, 'seed': seed, 'checks': receipts}, indent=2))
         print(f'PASS: focused PDA and {len(args.apps)} apps; screenshots in {output}', flush=True)
+        if args.show:
+            print('Desktop PDA instance ready. Stop: close the Minecraft window (or press Ctrl+C in the runner terminal); the test server stops too.', flush=True)
+            client.wait()
+    except KeyboardInterrupt:
+        pass
     finally:
         for process in reversed(processes):
             if process.poll() is None:

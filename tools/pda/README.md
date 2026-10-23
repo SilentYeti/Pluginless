@@ -1,14 +1,22 @@
 # Pluginless PDA smoke harness
 
-Run from the Pluginless checkout (Java 21, Python 3, `Xvfb` and `xdotool` required):
+Run from the Pluginless checkout (Java 21, Python 3 and `xdotool` required; `Xvfb` for headless mode):
 
 ```sh
 python3 tools/pda/run.py
 ```
 
+For a visible instance on your desktop that stays open:
+
+```sh
+python3 tools/pda/run.py --show
+```
+
+`--show` inherits your real DISPLAY and Wayland session (Minecraft uses X11/XWayland), does not start Xvfb or force software rendering, and targets input only at the launched client's process. After the smoke/script finishes, the client and seeded server stay up until you close Minecraft. Stop by closing the Minecraft window or pressing Ctrl+C in the runner terminal; the test server stops too. The PDA starts in your main hand, already raised with Terminal open. Right-click or Esc lowers it; right-click raises it again; use HOME on its screen to choose an app. Pluginless's own app is still pending task 17.
+
 This builds sibling `../WFLib-main` and Pluginless's `1.21.1` jar, then starts a **dedicated server and a separate client**, both NeoForge 21.1.248 / Minecraft 1.21.1. A small development-only mod supplies the seed and control bridge; no feature sources, production Gradle files or release jars include it. Runtime dependencies are the existing Gradle-cache versions used by WFLib/Pluginless: LDLib2 2.2.26-all, AHF 1.0.8-SNAPSHOT, GemRender 0.1.17-SNAPSHOT and Flywheel 1.0.6. Build the two projects normally first if those artifacts are not cached. `--wflib /path/to/WFLib-main` selects another sibling checkout; `--skip-build` reuses existing jars for quick iteration. Exact loaded jar paths and SHA-256 hashes are recorded, including the selected cached snapshot bytes.
 
-Every invocation creates a fresh `build/pda-harness/run-*` directory. It does not delete or reuse a previous world. The server binds **127.0.0.1 only**, uses an ephemeral port and offline test identities, and accepts the Minecraft EULA for this disposable test run. Never copy these server settings to a public server. Input goes to a private Xvfb display, not your desktop. Processes started by the runner are stopped when it exits, including after a failure.
+Every invocation creates a fresh `build/pda-harness/run-*` directory. It does not delete or reuse a previous world. The server binds **127.0.0.1 only**, uses an ephemeral port and offline test identities, and accepts the Minecraft EULA for this disposable test run. Never copy these server settings to a public server. Default input goes to a private Xvfb display; `--show` uses the desktop. Processes started by the runner are stopped when it exits, including after a failure.
 
 Seed: superflat world, fixed world seed 160016; server treasury 100,000 currency units; `harness_seller` starts with 10,000 and lists eight diamonds for 25 through the real `/ah sell` command; default YETI and GOLD stocks are frozen. `PdaTester` joins with 25,000 currency units, creative mode, and `wflib:pda` selected in the main hand. The harness fails if funding or listing fails. This is a GUI fixture, not an economy simulation or a security test.
 
