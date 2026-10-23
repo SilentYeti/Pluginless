@@ -106,7 +106,10 @@ def main():
             flat = json.dumps({'layers': [{'block': 'minecraft:bedrock', 'height': 1}, {'block': 'minecraft:dirt', 'height': 2}, {'block': 'minecraft:grass_block', 'height': 1}], 'biome': 'minecraft:plains', 'lakes': False, 'features': False})
             (game / 'server.properties').write_text(f'generator-settings={flat}\nonline-mode=false\nserver-ip=127.0.0.1\nserver-port={port}\nlevel-seed=160016\nlevel-type=minecraft:flat\nspawn-protection=0\nview-distance=3\nsimulation-distance=3\nmax-tick-time=-1\n')
         else:
-            (game / 'options.txt').write_text('onboardAccessibility:false\npauseOnLostFocus:false\nskipMultiplayerWarning:true\nrenderDistance:3\nsimulationDistance:5\nguiScale:2\nmaxFps:30\nenableVsync:false\n')
+            options = 'onboardAccessibility:false\npauseOnLostFocus:false\nskipMultiplayerWarning:true\nrenderDistance:3\nsimulationDistance:5\nguiScale:2\nmaxFps:30\nenableVsync:false\n'
+            if not args.show:
+                options += 'soundCategory_master:0.0\n'
+            (game / 'options.txt').write_text(options)
         command = ['sh', str(ROOT / 'gradlew'), '-p', str(project), 'runHarness', '--console=plain', '--no-daemon',
                    f'-Pmode={mode}', f'-PgameDir={game}', f'-PcontrolDir={control}', f'-Pport={port}']
         command += [f'-P{name}={path}' for name, path in jars.items()]
