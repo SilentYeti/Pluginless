@@ -1039,6 +1039,15 @@ final class SelfTest {
         check("dividends are paid by shares from whatever is in the account", () -> accounts.balance(b) == holderBefore + 30_00 && accounts.balance(a) == ownerBefore + 100_00 + 40_00);
         check("the company page shows shareholders and /shares portfolio shows dividends", () -> output(bob.createCommandSourceStack(), "company info Ponzi").contains("round3_alice 40")
                 && output(bob.createCommandSourceStack(), "shares portfolio").contains("30 of Ponzi"));
+        var sharesPage = new StocksPage();
+        check("the stocks page lists a company with shares and what bob holds", () -> {
+            for (var row : sharesPage.view(server, bob).getAsJsonObject("shares").getAsJsonArray("companies"))
+                if (row.getAsJsonObject().get("name").getAsString().equals("Ponzi")) return row.getAsJsonObject().get("held").getAsLong() == 30;
+            return false;
+        });
+        check("share intents on a stranger company, a bad count or a dividend that is not yours are refused", () -> !sharesPage.act(bob, "sbuy", java.util.List.of("Nope", "1", "10"), -1).ok()
+                && !sharesPage.act(bob, "sbuy", java.util.List.of("Ponzi", "0", "10"), -1).ok() && !sharesPage.act(bob, "dividend", java.util.List.of("Ponzi", "10"), -1).ok()
+                && !sharesPage.act(bob, "takeover", java.util.List.of("Ponzi;say"), -1).ok() && book.held(ponzi.id, b) == 30);
         as(bob, "shares takeover Ponzi"); check("a minority cannot take over", () -> ponzi.owner.equals(a));
         as(bob, "shares buy Ponzi 11 10"); as(bob, "shares takeover Ponzi");
         check("a majority shareholder takes the company", () -> ponzi.owner.equals(b) && !ponzi.can(a, "spend"));
