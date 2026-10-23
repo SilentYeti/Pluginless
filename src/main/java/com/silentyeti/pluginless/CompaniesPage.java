@@ -2,7 +2,6 @@ package com.silentyeti.pluginless;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -184,14 +183,7 @@ final class CompaniesPage implements PdaPage {
             var shop = Companies.store(player.level().getServer()).value.shop(args.get(0));
             if (shop == null || shop.admin()) return Result.fail("pluginless.shop.failed");
         }
-        try {
-            var source = player.createCommandSourceStack();
-            int result = player.level().getServer().getCommands().getDispatcher().execute(command, source);
-            return result > 0 ? Result.ok("pluginless.feature.done")
-                    : Result.fail(verb.startsWith("shop_") ? "pluginless.shop.failed" : "pluginless.company.failed");
-        } catch (CommandSyntaxException e) {
-            return Result.fail("pluginless.pda.invalid");
-        }
+        return PdaCommands.run(player, command);
     }
 
 }

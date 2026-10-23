@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import static com.wf.wflib.ui.Ui.*;
+import static com.silentyeti.pluginless.pda.PdaWidgets.button;
 
 /** Company and shop panels; all prices, permissions and transactions come back from the server. */
 final class CompaniesClientPage implements PdaClientPage {
@@ -52,6 +53,8 @@ final class CompaniesClientPage implements PdaClientPage {
         Signals.bool(PlApp.APP, "co_shops", a -> str(view(), "tab").equals("shops"));
         Signals.bool(PlApp.APP, "co_company", a -> !company().isEmpty());
         Signals.bool(PlApp.APP, "co_shop", a -> !shop().isEmpty());
+        Signals.bool(PlApp.APP, "co_item_selected", a -> !item.isEmpty());
+        Signals.bool(PlApp.APP, "co_slot_selected", a -> inventorySlot >= 0);
         for (String key : List.of("manage", "spend", "own", "member"))
             Signals.bool(PlApp.APP, "co_" + key, a -> flag(detail("company"), key));
         for (String key : List.of("edit", "stock"))
@@ -122,11 +125,6 @@ final class CompaniesClientPage implements PdaClientPage {
         return result;
     }
 
-    private static WidgetDef button(String label, UiAction action) { return button(label, "true", action); }
-    private static WidgetDef button(String label, String enabled, UiAction action) {
-        return new Button(action, enabled, PdaShell.PANEL, PdaShell.HOVER, PdaShell.PRESS, PdaShell.EDGE,
-                1, 0, 4, 3, 0, 0, Point.TOP_LEFT, text(label, PdaShell.TEXT));
-    }
     private static WidgetDef line(String signal) { return text("{pda_pl." + signal + "}", PdaShell.DIM); }
     private static WidgetDef entryButton(String subject, UiAction action) {
         return new Button(action, "true", PdaShell.PANEL, PdaShell.HOVER, PdaShell.PRESS, PdaShell.EDGE,
@@ -142,59 +140,67 @@ final class CompaniesClientPage implements PdaClientPage {
         WidgetDef members = repeat("pda_pl.co_members", true, 3,
                 entryButton("pda_pl_company_member", e -> target = ((Entry) e).id()));
         WidgetDef offers = repeat("pda_pl.co_offers", true, 3,
-                entryButton("pda_pl_shop_offer", e -> { item = ((Entry) e).id(); inventorySlot = -1; }));
+                entryButton("pda_pl_shop_offer", e -> {
+                    item = ((Entry) e).id(); inventorySlot = -1;
+                    for (var offer : array(detail("shop"), "offers")) if (str(offer, "item").equals(item)) {
+                        sellPrice = java.math.BigDecimal.valueOf(num(offer, "sell"), 2).toPlainString();
+                        buyPrice = java.math.BigDecimal.valueOf(num(offer, "buy"), 2).toPlainString();
+                        limit = Long.toString(num(offer, "limit"));
+                    }
+                }));
         WidgetDef companyPanel = column(5,
                 text("{pda_pl.co_name}", PdaShell.ACCENT), line("co_owner"), line("co_balance"),
                 line("co_payroll"), line("co_next"),
-                row(4, button("{pda_pl.co_amount}", e -> prompt("Amount in currency units (wage 0 clears)", amount, v -> amount = v))),
-                row(4, button("DEPOSIT", e -> send("deposit", company(), amount)),
-                        button("WITHDRAW", "pda_pl.co_spend", e -> send("withdraw", company(), amount))),
+                row(4, button("{pda_pl.co_amount}", () -> prompt("Amount in currency units (wage 0 clears)", amount, v -> amount = v))),
+                row(4, button("DEPOSIT", () -> send("deposit", company(), amount)),
+                        button("WITHDRAW", "pda_pl.co_spend", () -> send("withdraw", company(), amount))),
                 line("co_members_page"), members,
-                row(4, button("< MEMBERS", e -> send("members", "-1")), button("MEMBERS >", e -> send("members", "1"))),
-                button("{pda_pl.co_target}", e -> prompt("Player name", target, v -> target = v)),
+                row(4, button("< MEMBERS", () -> send("members", "-1")), button("MEMBERS >", () -> send("members", "1"))),
+                button("{pda_pl.co_target}", () -> prompt("Player name", target, v -> target = v)),
                 when("pda_pl.co_manage", column(4,
-                        row(4, button("{pda_pl.co_role}", "pda_pl.co_own", e -> role = role.equals("employee") ? "manager" : "employee"),
-                                button("HIRE / SET ROLE", e -> send("hire", company(), target, flag(detail("company"), "own") ? role : "employee"))),
-                        row(4, button("SET WAGE", e -> send("wage", company(), target, amount)),
-                                button("FIRE", e -> send("fire", company(), target))),
-                        button("OPEN SHOP", e -> { String c = company(); prompt("New shop name (3-24 letters, digits, _)", "", v -> send("shop_open", c, v)); }))),
-                when("pda_pl.co_member", button("LEAVE", e -> send("leave", company()))),
-                when("pda_pl.co_own", button("DISSOLVE...", e -> {
+                        row(4, button("{pda_pl.co_role}", "pda_pl.co_own", () -> role = role.equals("employee") ? "manager" : "employee"),
+                                button("HIRE / SET ROLE", () -> send("hire", company(), target, flag(detail("company"), "own") ? role : "employee"))),
+                        row(4, button("SET WAGE", () -> send("wage", company(), target, amount)),
+                                button("FIRE", () -> send("fire", company(), target))),
+                        button("OPEN SHOP", () -> { String c = company(); prompt("New shop name (3-24 letters, digits, _)", "", v -> send("shop_open", c, v)); }))),
+                when("pda_pl.co_member", button("LEAVE", () -> send("leave", company()))),
+                when("pda_pl.co_own", button("DISSOLVE...", () -> {
                     String c = company(); prompt("Type " + c + " to dissolve and return stock", "", v -> { if (v.equals(c)) send("dissolve", c); });
                 })));
         WidgetDef shopPanel = column(5,
                 text("{pda_pl.co_shop_name}", PdaShell.ACCENT), line("co_shop_owner"), line("co_offers_page"), offers,
-                row(4, button("< OFFERS", e -> send("offers", "-1")), button("OFFERS >", e -> send("offers", "1"))),
+                row(4, button("< OFFERS", () -> send("offers", "-1")), button("OFFERS >", () -> send("offers", "1"))),
                 text("SELECTED: {pda_pl.co_item}", PdaShell.ACCENT),
-                row(4, button("{pda_pl.co_quantity}", e -> prompt("Quantity", quantity, v -> quantity = v)),
-                        button("x1", e -> quantity = "1"), button("x16", e -> quantity = "16"), button("x64", e -> quantity = "64")),
-                row(4, button("BUY", e -> send("shop_buy", shop(), item, quantity)),
-                        button("SELL", e -> send("shop_sell", shop(), item, quantity))),
+                row(4, button("{pda_pl.co_quantity}", () -> prompt("Quantity", quantity, v -> quantity = v)),
+                        button("x1", () -> quantity = "1"), button("x16", () -> quantity = "16"), button("x64", () -> quantity = "64")),
+                row(4, button("BUY", "pda_pl.co_item_selected", () -> send("shop_buy", shop(), item, quantity)),
+                        button("SELL", "pda_pl.co_item_selected", () -> send("shop_sell", shop(), item, quantity))),
                 when("pda_pl.co_stock", column(4,
                         line("co_shop_account"), text("LATEST COMPANY TRANSACTIONS", PdaShell.DIM),
                         repeat("pda_pl.co_history", true, 3, column(2,
                                 text("{pda_pl_shop_history.name}", PdaShell.ACCENT), text("{pda_pl_shop_history.line}", PdaShell.DIM))),
                         text("RESTOCK: PICK YOUR INVENTORY STACK", PdaShell.DIM),
-                        grid("pda_pl.co_inventory", 2, 3, button("{pda_pl_shop_slot.label}", e -> {
+                        grid("pda_pl.co_inventory", 2, 3, new Button(e -> {
                             var slot = (Slot) e; item = slot.item(); inventorySlot = slot.slot();
-                        })),
-                        row(4, button("RESTOCK", e -> PdaClientSetup.send("companies", "shop_stock", List.of(shop(), item, quantity), inventorySlot)),
-                                button("UNSTOCK", e -> send("shop_unstock", shop(), item, quantity))))),
+                        }, "true", PdaShell.PANEL, PdaShell.HOVER, PdaShell.PRESS, PdaShell.EDGE,
+                                1, 0, 3, 2, 114, 14, Point.TOP_LEFT, text("{pda_pl_shop_slot.label}", PdaShell.TEXT))),
+                        row(4, button("RESTOCK", "pda_pl.co_slot_selected", () -> PdaClientSetup.send("companies", "shop_stock", List.of(shop(), item, quantity), inventorySlot)),
+                                button("UNSTOCK", "pda_pl.co_item_selected", () -> send("shop_unstock", shop(), item, quantity))))),
                 when("pda_pl.co_edit", column(4,
                         text("OFFER PRICES (0 DISABLES THAT SIDE)", PdaShell.DIM), line("co_prices"),
-                        row(4, button("ITEM ID", e -> prompt("Item registry ID", item, v -> { item = v; inventorySlot = -1; })),
-                                button("SELL PRICE", e -> prompt("Price customers pay", sellPrice, v -> sellPrice = v))),
-                        row(4, button("BUY PRICE", e -> prompt("Price shop pays customers", buyPrice, v -> buyPrice = v)),
-                                button("BUY LIMIT", e -> prompt("Quantity shop will buy", limit, v -> limit = v))),
-                        button("SAVE OFFER", e -> send("shop_offer", shop(), item, sellPrice, buyPrice, limit)),
-                        button("CLOSE SHOP...", e -> { String s = shop(); prompt("Type " + s + " to close and return stock", "", v -> { if (v.equals(s)) send("shop_close", s); }); }))));
+                        row(4, button("ITEM ID", () -> prompt("Item registry ID", item, v -> { item = v; inventorySlot = -1; })),
+                                button("SELL PRICE", () -> prompt("Price customers pay", sellPrice, v -> sellPrice = v))),
+                        row(4, button("BUY PRICE", () -> prompt("Price shop pays customers", buyPrice, v -> buyPrice = v)),
+                                button("BUY LIMIT", () -> prompt("Quantity shop will buy", limit, v -> limit = v))),
+                        button("SAVE OFFER", () -> send("shop_offer", shop(), item, sellPrice, buyPrice, limit)),
+                        button("CLOSE SHOP...", () -> { String s = shop(); prompt("Type " + s + " to close and return stock", "", v -> { if (v.equals(s)) send("shop_close", s); }); }))));
         return stack(
-                at("8", "3", row(4, button("MY COMPANY", e -> send("tab", "mine")),
-                        button("DIRECTORY", e -> send("tab", "directory")), button("SHOPS", e -> send("tab", "shops")),
-                        button("SEARCH", e -> prompt("Search companies, shops or items (use * to clear)", str(view(), "search"), v -> send("search", v.equals("*") ? "" : v))))),
+                at("8", "3", row(4, button("MY COMPANY", () -> send("tab", "mine")),
+                        button("DIRECTORY", () -> send("tab", "directory")), button("SHOPS", () -> send("tab", "shops")),
+                        button("SEARCH", () -> prompt("Search companies, shops or items (use * to clear)", str(view(), "search"), v -> send("search", v.equals("*") ? "" : v))))),
                 at("8", "25", entries),
-                at("8", "152", row(5, button("<", e -> send("page", "-1")), line("co_page"), button(">", e -> send("page", "1")))),
-                at("8", "174", button("FOUND COMPANY", e -> prompt("New company name; fee " + money(num(view(), "fee")), "", v -> send("create", v)))),
+                at("8", "152", row(5, button("<", () -> send("page", "-1")), line("co_page"), button(">", () -> send("page", "1")))),
+                at("8", "174", button("FOUND COMPANY", () -> prompt("New company name; fee " + money(num(view(), "fee")), "", v -> send("create", v)))),
                 at("126", "25", when("pda_pl.co_shops",
                         when("pda_pl.co_shop", scroll("250", "162", PdaShell.ACCENT, shopPanel), text("NO SHOPS YET", PdaShell.DIM)),
                         when("pda_pl.co_company", scroll("250", "162", PdaShell.ACCENT, companyPanel),

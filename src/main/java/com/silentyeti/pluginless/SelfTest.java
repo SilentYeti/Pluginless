@@ -639,6 +639,12 @@ final class SelfTest {
                 !pda.act(bob, "withdraw", List.of("Acme", "10"), -1).ok()
                 && !pda.act(bob, "hire", List.of("Acme", "round3_bob manager", "manager"), -1).ok()
                 && accounts.balance(account) == 100_00 && accounts.balance(b) == 100_00 && acme.members.isEmpty());
+        var denied = normal.deny;
+        normal.deny = List.of("company deposit");
+        try {
+            check("PDA company actions preserve rank command restrictions", () ->
+                    !pda.act(alice, "deposit", List.of("Acme", "1"), -1).ok() && accounts.balance(account) == 100_00);
+        } finally { normal.deny = denied; }
         as(bob, "company hire Acme round3_bob manager"); check("outsiders cannot hire themselves", () -> acme.members.isEmpty());
         as(alice, "company hire Acme round3_bob employee"); as(alice, "company wage Acme round3_bob 5");
         check("PDA employee snapshot hides spend/management rights and rejects wage edits", () -> {
@@ -668,6 +674,12 @@ final class SelfTest {
         check("staff stock a shop from their inventory", () -> corner.stock.get("minecraft:bread") == 12 && items(bob, Items.BREAD) == 8);
         var carl = player("round3_carl"); online(carl, true); Players.joined(carl); accounts.set(carl.getUUID(), 100_00);
         try {
+            check("PDA directory selection does not leak into My Company for a nonmember", () -> {
+                pda.act(carl, "tab", List.of("directory"), -1);
+                boolean listed = pda.view(server, carl).has("company");
+                pda.act(carl, "tab", List.of("mine"), -1);
+                return listed && !pda.view(server, carl).has("company");
+            });
             as(carl, "shop stock Corner minecraft:bread 1"); as(carl, "shop offer Corner minecraft:bread 1 1 1");
             check("customers cannot stock or reprice a shop", () -> corner.stock.get("minecraft:bread") == 12 && corner.offers.get("minecraft:bread").sellPrice() == 2_00);
             long before = accounts.balance(account), serverBefore = accounts.balance(Accounts.SERVER);
@@ -694,6 +706,21 @@ final class SelfTest {
                     !pda.act(alice, "shop_offer", List.of("Server", "minecraft:coal", "0", "0", "0"), -1).ok()
                     && !pda.act(alice, "shop_admin", List.of("Forbidden"), -1).ok()
                     && server0.offers.containsKey("minecraft:coal") && book.shop("Forbidden") == null);
+            //? if >=26.1 {
+            /*server.getPlayerList().op(alice.nameAndId());
+            *///?} else {
+            server.getPlayerList().op(alice.getGameProfile());
+            //?}
+            try {
+                check("PDA keeps admin-shop editing out even for operators", () -> RankGate.isOperator(alice)
+                        && !pda.act(alice, "shop_close", List.of("Server"), -1).ok() && book.shop("Server") == server0);
+            } finally {
+                //? if >=26.1 {
+                /*server.getPlayerList().deop(alice.nameAndId());
+                *///?} else {
+                server.getPlayerList().deop(alice.getGameProfile());
+                //?}
+            }
             for (int i = 0; i < 36; i++) carl.getInventory().setItem(i, ItemStack.EMPTY);
             accounts.set(carl.getUUID(), 10_00); accounts.set(Accounts.SERVER, 0);
             as(carl, "shop buy Server minecraft:coal 4");
