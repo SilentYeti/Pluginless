@@ -1,0 +1,42 @@
+[
+  {
+    "op": "pointer",
+    "x": 192,
+    "y": 220
+  },
+  {
+    "op": "wait",
+    "seconds": 0.3
+  },
+  {
+    "op": "click"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.3
+  },
+  {
+    "op": "text",
+    "text": "help"
+  },
+  {
+    "op": "assert_text",
+    "text": "help"
+  },
+  {
+    "op": "key",
+    "key": "Return"
+  },
+  {
+    "op": "assert_text",
+    "text": ""
+  },
+  {
+    "op": "wait",
+    "seconds": 1
+  },
+  {
+    "op": "screenshot",
+    "name": "terminal-after-input"
+  }
+]

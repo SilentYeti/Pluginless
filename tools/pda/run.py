@@ -1,0 +1,167 @@
+#!/usr/bin/env python3
+"""Disposable 1.21.1 NeoForge PDA client/server smoke run; no feature sources are modified."""
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import shutil
+import signal
+import socket
+import subprocess
+import tempfile
+import time
+
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent.parent
+
+
+def cached(group, artifact, version):
+    cache = Path(os.environ.get('GRADLE_USER_HOME', Path.home() / '.gradle')) / 'caches/modules-2/files-2.1'
+    candidates = list((cache / group / artifact / version).glob(f'*/{artifact}-{version}' + ('-all.jar' if artifact.startswith('ldlib2-') else '.jar')))
+    if not candidates:
+        raise RuntimeError(f'Build WFLib/Pluginless first: missing cached {artifact}:{version}')
+    return max(candidates, key=lambda p: p.stat().st_mtime)
+
+
+def wait_for(path, processes, timeout=600):
+    deadline = time.monotonic() + timeout
+    while not path.exists():
+        for process in processes:
+            if process.poll() is not None:
+                raise RuntimeError(f'Process {process.pid} exited ({process.returncode}) before {path.name}; see run logs')
+        if time.monotonic() >= deadline:
+            raise TimeoutError(f'Timed out waiting for {path}')
+        time.sleep(0.2)
+    return json.loads(path.read_text())
+
+
+def write_action(control, number, **action):
+    temporary = control / 'action.tmp'
+    temporary.write_text(json.dumps(dict(id=number, **action)))
+    temporary.replace(control / 'action.json')
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--wflib', type=Path, default=ROOT.parent / 'WFLib-main')
+    parser.add_argument('--apps', nargs='*', default=['wflib:terminal'], help='PDA IDs to open; missing/invisible apps fail')
+    parser.add_argument('--script', type=Path, help='JSON array: app/home/key/text/move/click/wait/screenshot actions')
+    parser.add_argument('--skip-build', action='store_true', help='Use existing jars; manifest still records exact bytes')
+    args = parser.parse_args()
+    for executable in ('java', 'Xvfb', 'xdotool'):
+        if not shutil.which(executable):
+            parser.error(f'{executable} is required')
+    wflib = args.wflib.resolve()
+    env = dict(os.environ, JAVA_HOME='/usr/lib/jvm/java-21-openjdk', LIBGL_ALWAYS_SOFTWARE='true')
+    steps_from_file = json.loads(args.script.read_text()) if args.script else []
+    if not isinstance(steps_from_file, list):
+        parser.error('--script must contain a JSON array')
+    if not args.skip_build:
+        for project, task in ((wflib, 'jar'), (ROOT, ':1.21.1:jar')):
+            subprocess.run(['sh', str(project / 'gradlew'), task, '--console=plain'], cwd=project, env=env, check=True)
+    jars = {
+        'pluginlessJar': ROOT / 'versions/1.21.1/build/libs/pluginless-0.1.0+1.21.1.jar',
+        'wflibJar': wflib / 'build/libs/wflib-1.8.36.jar',
+        'ahfJar': cached('com.norwood', 'ahf-1.21.1-neoforge', '1.0.8-SNAPSHOT'),
+        'ldlibJar': cached('com.lowdragmc.ldlib2', 'ldlib2-neoforge-1.21.1', '2.2.26'),
+        'gemrenderJar': cached('com.wf.gemrender', 'gemrender-1.21.1', '0.1.17-SNAPSHOT'),
+        'flywheelJar': cached('dev.engine-room.flywheel', 'flywheel-neoforge-1.21.1', '1.0.6'),
+    }
+    runs = ROOT / 'build/pda-harness'
+    runs.mkdir(parents=True, exist_ok=True)
+    output = Path(tempfile.mkdtemp(prefix='run-', dir=runs))
+    print(f'PDA harness artifacts: {output}', flush=True)
+    control = output / 'control'
+    control.mkdir()
+    manifest = {name: {'path': str(path), 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()} for name, path in jars.items()}
+    (output / 'jars.json').write_text(json.dumps(manifest, indent=2))
+    with socket.socket() as probe:
+        probe.bind(('127.0.0.1', 0))
+        port = probe.getsockname()[1]
+    processes, logs = [], []
+
+    def spawn(command, directory, log):
+        stream = (output / log).open('w')
+        logs.append(stream)
+        process = subprocess.Popen(command, cwd=directory, env=env, stdout=stream, stderr=subprocess.STDOUT, start_new_session=True)
+        processes.append(process)
+        return process
+
+    def start_game(mode):
+        project = output / (mode + '-project')
+        project.mkdir()
+        for name in ('build.gradle', 'settings.gradle'):
+            shutil.copy2(HERE / name, project / name)
+        shutil.copytree(HERE / 'src', project / 'src')
+        game = output / mode
+        game.mkdir()
+        if mode == 'server':
+            (game / 'eula.txt').write_text('eula=true\n')
+            flat = json.dumps({'layers': [{'block': 'minecraft:bedrock', 'height': 1}, {'block': 'minecraft:dirt', 'height': 2}, {'block': 'minecraft:grass_block', 'height': 1}], 'biome': 'minecraft:plains', 'lakes': False, 'features': False})
+            (game / 'server.properties').write_text(f'generator-settings={flat}\nonline-mode=false\nserver-ip=127.0.0.1\nserver-port={port}\nlevel-seed=160016\nlevel-type=minecraft:flat\nspawn-protection=0\nview-distance=3\nsimulation-distance=3\nmax-tick-time=-1\n')
+        else:
+            (game / 'options.txt').write_text('onboardAccessibility:false\npauseOnLostFocus:false\nskipMultiplayerWarning:true\nrenderDistance:3\nsimulationDistance:5\nguiScale:2\nmaxFps:30\nenableVsync:false\n')
+        command = ['sh', str(ROOT / 'gradlew'), '-p', str(project), 'runHarness', '--console=plain', '--no-daemon',
+                   f'-Pmode={mode}', f'-PgameDir={game}', f'-PcontrolDir={control}', f'-Pport={port}']
+        command += [f'-P{name}={path}' for name, path in jars.items()]
+        return spawn(command, project, mode + '.log')
+
+    def xdo(*values):
+        subprocess.run(['xdotool', *map(str, values)], env=env, check=True, capture_output=True)
+
+    try:
+        display = next(number for number in range(200, 500) if not Path(f'/tmp/.X11-unix/X{number}').exists() and not Path(f'/tmp/.X{number}-lock').exists())
+        env['DISPLAY'] = f':{display}'
+        xvfb = spawn(['Xvfb', env['DISPLAY'], '-screen', '0', '1280x800x24', '-nolisten', 'tcp'], output, 'xvfb.log')
+        server = start_game('server')
+        seed = wait_for(control / 'server-ready.json', [server, xvfb])
+        client = start_game('client')
+        wait_for(control / 'client-ready.json', processes)
+        windows = subprocess.check_output(['xdotool', 'search', '--name', 'Minecraft'], env=env, text=True).splitlines()
+        window = windows[-1]
+        xdo('windowfocus', '--sync', window)
+        xdo('mousemove', '--window', window, 640, 400)
+        xdo('click', 3)
+        time.sleep(2)
+        steps = [{'op': 'screenshot', 'name': 'pda-home'}, {'op': 'state'}]
+        for app in args.apps:
+            steps += [{'op': 'app', 'id': app}, {'op': 'wait', 'seconds': 2}, {'op': 'screenshot', 'name': app.replace(':', '-')}]
+        steps += steps_from_file
+        receipts = []
+        for number, step in enumerate(steps, 1):
+            op = step['op']
+            if op == 'key': xdo('key', '--clearmodifiers', step['key'])
+            elif op == 'text': xdo('type', '--clearmodifiers', '--delay', 30, '--', step['text'])
+            elif op == 'move': xdo('mousemove', '--window', window, step['x'], step['y'])
+            elif op == 'click': xdo('click', step.get('button', 1))
+            elif op == 'wait': time.sleep(step['seconds'])
+            else:
+                action = {'op': 'open', 'app': step['id']} if op == 'app' else {key: value for key, value in step.items() if key != 'name'}
+                write_action(control, number, **action)
+                receipt = wait_for(control / f'result-{number}.json', processes, 30)
+                if not receipt['ok']: raise RuntimeError(receipt)
+                if op == 'state' and not receipt.get('focused'): raise RuntimeError(f'PDA did not focus from mouse use: {receipt}')
+                if op == 'screenshot':
+                    image = output / 'client/screenshots' / f'capture-{number}.png'
+                    if not image.exists() or image.stat().st_size < 1000: raise RuntimeError(f'Screenshot missing/empty: {image}')
+                    name = step['name']
+                    if not name or any(c not in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_' for c in name):
+                        raise ValueError('Screenshot name must contain only letters, digits, - or _')
+                    shutil.copy2(image, output / (name + '.png'))
+                receipts.append(dict(step=step, result=receipt))
+        (output / 'result.json').write_text(json.dumps({'passed': True, 'seed': seed, 'checks': receipts}, indent=2))
+        print(f'PASS: focused PDA and {len(args.apps)} apps; screenshots in {output}', flush=True)
+    finally:
+        for process in reversed(processes):
+            if process.poll() is None:
+                os.killpg(process.pid, signal.SIGTERM)
+                try: process.wait(10)
+                except subprocess.TimeoutExpired:
+                    os.killpg(process.pid, signal.SIGKILL)
+                    process.wait()
+        for stream in logs: stream.close()
+
+
+if __name__ == '__main__':
+    main()
