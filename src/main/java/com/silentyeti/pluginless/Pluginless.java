@@ -71,6 +71,7 @@ public final class Pluginless {
         PlayerUIMenuType.register(SHOP_UI, player -> CompanyUI::shops);
 
         PdaHub.register(new HomePage());
+        PdaHub.register(new QolPage());
         //? if <26.1 {
         com.silentyeti.pluginless.pda.PdaNet.register(modBus);
         //?}
