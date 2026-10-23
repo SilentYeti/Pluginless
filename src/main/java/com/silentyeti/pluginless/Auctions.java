@@ -73,8 +73,14 @@ final class Auctions {
     }
 
     static boolean sell(ServerPlayer player, long price, boolean auction) {
+        return sell(player, price, auction, -1);
+    }
+
+    /** {@code slot}: an inventory slot 0..35, or -1 for the main hand (the PDA screens hold the PDA, so they pick a slot). */
+    static boolean sell(ServerPlayer player, long price, boolean auction, int slot) {
         var server = player.level().getServer();
-        var stack = player.getMainHandItem();
+        if (slot < -1 || slot > 35) return false;
+        var stack = slot < 0 ? player.getMainHandItem() : player.getInventory().getItem(slot);
         if (server == null || stack.isEmpty() || price < Config.auctionMinCents() || price > Config.auctionMaxCents()) return false;
         var store = store(server);
         String itemId = Stacks.id(stack);
@@ -172,7 +178,11 @@ final class Auctions {
         for (var player : server.getPlayerList().getPlayers()) {
             var notices = store.value.notices.remove(player.getUUID());
             if (notices == null) continue;
-            for (var notice : notices) player.sendSystemMessage(Component.translatable("pluginless.auction.notice." + notice.kind(), notice.name(), Config.format(notice.cents())));
+            for (var notice : notices) {
+                var text = Component.translatable("pluginless.auction.notice." + notice.kind(), notice.name(), Config.format(notice.cents()));
+                player.sendSystemMessage(text);
+                Notices.push(player.getUUID(), "auction", text.getString(), System.currentTimeMillis());
+            }
             store.setDirty();
         }
     }

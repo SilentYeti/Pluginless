@@ -72,6 +72,7 @@ public final class Pluginless {
 
         PdaHub.register(new HomePage());
         PdaHub.register(new BankPage());
+        PdaHub.register(new AuctionPage());
         //? if <26.1 {
         com.silentyeti.pluginless.pda.PdaNet.register(modBus);
         //?}

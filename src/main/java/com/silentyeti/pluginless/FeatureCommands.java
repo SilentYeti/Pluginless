@@ -3,6 +3,7 @@ package com.silentyeti.pluginless;
 import com.lowdragmc.lowdraglib2.gui.factory.PlayerUIMenuType;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
@@ -159,8 +160,10 @@ final class FeatureCommands {
         dispatcher.register(literal("ah").executes(ctx -> { PlayerUIMenuType.openUI(ctx.getSource().getPlayerOrException(), Pluginless.AUCTION_UI); return 1; })
                 .then(literal("list").executes(ctx -> listings(ctx, ""))
                         .then(argument("search", StringArgumentType.greedyString()).executes(ctx -> listings(ctx, StringArgumentType.getString(ctx, "search")))))
-                .then(literal("sell").then(argument("amount", Commands.amount()).executes(ctx -> action(ctx, player -> Auctions.sell(player, Commands.cents(ctx)), "auction"))))
-                .then(literal("auction").then(argument("amount", Commands.amount()).executes(ctx -> action(ctx, player -> Auctions.sell(player, Commands.cents(ctx), true), "auction"))))
+                .then(literal("sell").then(argument("amount", Commands.amount()).executes(ctx -> action(ctx, player -> Auctions.sell(player, Commands.cents(ctx)), "auction"))
+                        .then(argument("slot", IntegerArgumentType.integer(0, 35)).executes(ctx -> action(ctx, player -> Auctions.sell(player, Commands.cents(ctx), false, IntegerArgumentType.getInteger(ctx, "slot")), "auction")))))
+                .then(literal("auction").then(argument("amount", Commands.amount()).executes(ctx -> action(ctx, player -> Auctions.sell(player, Commands.cents(ctx), true), "auction"))
+                        .then(argument("slot", IntegerArgumentType.integer(0, 35)).executes(ctx -> action(ctx, player -> Auctions.sell(player, Commands.cents(ctx), true, IntegerArgumentType.getInteger(ctx, "slot")), "auction")))))
                 .then(literal("bid").then(argument("id", LongArgumentType.longArg(1)).then(argument("amount", Commands.amount()).executes(ctx -> {
                     String problem = Auctions.bid(ctx.getSource().getPlayerOrException(), LongArgumentType.getLong(ctx, "id"), Commands.cents(ctx));
                     if (problem != null) { ctx.getSource().sendFailure(Component.translatable("pluginless.auction." + problem)); return 0; }
