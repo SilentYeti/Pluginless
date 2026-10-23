@@ -686,10 +686,27 @@ final class SelfTest {
         check("founding a company charges the fee", () -> book.company("Acme") != null && accounts.balance(a) == 1000_00 - Config.companyFeeCents() && accounts.balance(Accounts.SERVER) == Config.companyFeeCents());
         as(alice, "company create Second"); check("the company limit comes from config or the rank perk", () -> book.company("Second") == null);
         var acme = book.company("Acme"); var account = CompanyBook.account(acme.id);
-        as(alice, "company deposit Acme 100"); as(bob, "company withdraw Acme 10");
+        var pda = new CompaniesPage();
+        check("PDA company deposit uses the real command", () -> pda.act(alice, "deposit", List.of("Acme", "100"), -1).ok());
+        as(bob, "company withdraw Acme 10");
         check("only staff with the right role can withdraw", () -> accounts.balance(account) == 100_00 && accounts.balance(b) == 100_00);
+        check("PDA refuses forged withdrawals and command injection without moving money", () ->
+                !pda.act(bob, "withdraw", List.of("Acme", "10"), -1).ok()
+                && !pda.act(bob, "hire", List.of("Acme", "round3_bob manager", "manager"), -1).ok()
+                && accounts.balance(account) == 100_00 && accounts.balance(b) == 100_00 && acme.members.isEmpty());
+        var denied = normal.deny;
+        normal.deny = List.of("company deposit");
+        try {
+            check("PDA company actions preserve rank command restrictions", () ->
+                    !pda.act(alice, "deposit", List.of("Acme", "1"), -1).ok() && accounts.balance(account) == 100_00);
+        } finally { normal.deny = denied; }
         as(bob, "company hire Acme round3_bob manager"); check("outsiders cannot hire themselves", () -> acme.members.isEmpty());
         as(alice, "company hire Acme round3_bob employee"); as(alice, "company wage Acme round3_bob 5");
+        check("PDA employee snapshot hides spend/management rights and rejects wage edits", () -> {
+            var view = pda.view(server, bob).getAsJsonObject("company");
+            return !view.get("spend").getAsBoolean() && !view.get("manage").getAsBoolean()
+                    && !pda.act(bob, "wage", List.of("Acme", "round3_bob", "500"), -1).ok() && acme.wages.get(b) == 5_00;
+        });
         book.lastPayroll = 1; Companies.tick(server, 1 + Config.payrollMillis());
         check("payroll pays wages from the company account", () -> accounts.balance(b) == 105_00 && accounts.balance(account) == 95_00);
         Companies.tick(server, 2 + Config.payrollMillis()); check("payroll runs once per interval", () -> accounts.balance(b) == 105_00);
@@ -704,14 +721,24 @@ final class SelfTest {
         check("a company opens a shop", () -> corner != null && corner.company == acme.id);
         as(alice, "shop offer Corner minecraft:bread 2 1 10");
         bob.getInventory().setItem(0, new ItemStack(Items.BREAD, 20));
-        as(bob, "shop stock Corner minecraft:bread 12");
+        check("PDA restock refuses a forged or changed inventory item", () ->
+                !pda.act(bob, "shop_stock", List.of("Corner", "minecraft:diamond", "12"), 0).ok()
+                && items(bob, Items.BREAD) == 20 && corner.stock.isEmpty());
+        check("PDA staff restock from the selected inventory slot", () ->
+                pda.act(bob, "shop_stock", List.of("Corner", "minecraft:bread", "12"), 0).ok());
         check("staff stock a shop from their inventory", () -> corner.stock.get("minecraft:bread") == 12 && items(bob, Items.BREAD) == 8);
         var carl = player("round3_carl"); online(carl, true); Players.joined(carl); accounts.set(carl.getUUID(), 100_00);
         try {
+            check("PDA directory selection does not leak into My Company for a nonmember", () -> {
+                pda.act(carl, "tab", List.of("directory"), -1);
+                boolean listed = pda.view(server, carl).has("company");
+                pda.act(carl, "tab", List.of("mine"), -1);
+                return listed && !pda.view(server, carl).has("company");
+            });
             as(carl, "shop stock Corner minecraft:bread 1"); as(carl, "shop offer Corner minecraft:bread 1 1 1");
             check("customers cannot stock or reprice a shop", () -> corner.stock.get("minecraft:bread") == 12 && corner.offers.get("minecraft:bread").sellPrice() == 2_00);
             long before = accounts.balance(account), serverBefore = accounts.balance(Accounts.SERVER);
-            as(carl, "shop buy Corner minecraft:bread 5");
+            check("PDA customer buys through existing shop accounting", () -> pda.act(carl, "shop_buy", List.of("Corner", "minecraft:bread", "5"), -1).ok());
             long tax = Taxes.percent(10_00, Config.shopTax(), 1);
             check("a purchase pays the company, taxes the sale and delivers the items", () -> accounts.balance(carl.getUUID()) == 90_00 && accounts.balance(account) == before + 10_00 - tax
                     && accounts.balance(Accounts.SERVER) == serverBefore + tax && items(carl, Items.BREAD) == 5 && corner.stock.get("minecraft:bread") == 7);
@@ -730,6 +757,25 @@ final class SelfTest {
 
             as(alice, "shop admin Server"); check("only operators create admin shops", () -> book.shop("Server") == null);
             var server0 = book.open(a, null, "Server", 0); book.offer(server0, "minecraft:coal", 1_00, 50, 0);
+            check("PDA refuses admin-shop editing and unknown admin verbs", () ->
+                    !pda.act(alice, "shop_offer", List.of("Server", "minecraft:coal", "0", "0", "0"), -1).ok()
+                    && !pda.act(alice, "shop_admin", List.of("Forbidden"), -1).ok()
+                    && server0.offers.containsKey("minecraft:coal") && book.shop("Forbidden") == null);
+            //? if >=26.1 {
+            /*server.getPlayerList().op(alice.nameAndId());
+            *///?} else {
+            server.getPlayerList().op(alice.getGameProfile());
+            //?}
+            try {
+                check("PDA keeps admin-shop editing out even for operators", () -> RankGate.isOperator(alice)
+                        && !pda.act(alice, "shop_close", List.of("Server"), -1).ok() && book.shop("Server") == server0);
+            } finally {
+                //? if >=26.1 {
+                /*server.getPlayerList().deop(alice.nameAndId());
+                *///?} else {
+                server.getPlayerList().deop(alice.getGameProfile());
+                //?}
+            }
             for (int i = 0; i < 36; i++) carl.getInventory().setItem(i, ItemStack.EMPTY);
             accounts.set(carl.getUUID(), 10_00); accounts.set(Accounts.SERVER, 0);
             as(carl, "shop buy Server minecraft:coal 4");

@@ -77,6 +77,7 @@ public final class Pluginless {
         PdaHub.register(new StocksPage());
         PdaHub.register(new RanksPage());
         PdaHub.register(new CosmeticsPage());
+        PdaHub.register(new CompaniesPage());
         //? if <26.1 {
         com.silentyeti.pluginless.pda.PdaNet.register(modBus);
         //?}
