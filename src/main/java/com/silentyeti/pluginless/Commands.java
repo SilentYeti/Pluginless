@@ -223,6 +223,7 @@ final class Commands {
         ctx.getSource().sendSuccess(() -> Component.translatable("pluginless.pay.sent", Config.format(cents), target.name()), false);
         var receiver = server.getPlayerList().getPlayer(target.id());
         if (receiver != null) receiver.sendSystemMessage(Component.translatable("pluginless.pay.received", Config.format(cents), sender.getDisplayName()));
+        if (!Accounts.system(target.id())) Notices.push(target.id(), "bank", sender.getScoreboardName() + " paid you " + Config.format(cents), System.currentTimeMillis());
         return 1;
     }
 

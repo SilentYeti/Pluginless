@@ -71,6 +71,13 @@ final class Market {
         return placed;
     }
 
+    /** How many plain items of this kind are in the inventory, i.e. what a sell order could take. */
+    static long held(ServerPlayer player, String itemId) {
+        long held = 0;
+        for (int i = 0; i < 36; i++) if (plain(player.getInventory().getItem(i), itemId)) held += player.getInventory().getItem(i).getCount();
+        return held;
+    }
+
     /** Removes exactly the quantity of plain items from the inventory, or nothing. */
     static boolean takePlain(ServerPlayer player, String itemId, long quantity) {
         var inventory = player.getInventory();

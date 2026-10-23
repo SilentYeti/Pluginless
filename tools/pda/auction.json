@@ -1,0 +1,82 @@
+[
+  {
+    "op": "pointer",
+    "x": 145,
+    "y": 74
+  },
+  {
+    "op": "wait",
+    "seconds": 0.4
+  },
+  {
+    "op": "click"
+  },
+  {
+    "op": "wait",
+    "seconds": 2
+  },
+  {
+    "op": "screenshot",
+    "name": "auction-browse"
+  },
+  {
+    "op": "pointer",
+    "x": 100,
+    "y": 91
+  },
+  {
+    "op": "wait",
+    "seconds": 0.4
+  },
+  {
+    "op": "click"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.8
+  },
+  {
+    "op": "screenshot",
+    "name": "auction-selected"
+  },
+  {
+    "op": "pointer",
+    "x": 255,
+    "y": 135
+  },
+  {
+    "op": "wait",
+    "seconds": 0.4
+  },
+  {
+    "op": "click"
+  },
+  {
+    "op": "wait",
+    "seconds": 1.5
+  },
+  {
+    "op": "screenshot",
+    "name": "auction-buy"
+  },
+  {
+    "op": "pointer",
+    "x": 108,
+    "y": 46
+  },
+  {
+    "op": "wait",
+    "seconds": 0.4
+  },
+  {
+    "op": "click"
+  },
+  {
+    "op": "wait",
+    "seconds": 1.5
+  },
+  {
+    "op": "screenshot",
+    "name": "auction-sell"
+  }
+]

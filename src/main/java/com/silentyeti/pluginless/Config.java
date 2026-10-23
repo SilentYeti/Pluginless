@@ -110,6 +110,10 @@ public final class Config {
         return Math.round(START_BALANCE.get() * 100);
     }
 
+    public static String symbol() {
+        return CURRENCY_SYMBOL.get();
+    }
+
     public static String format(long cents) {
         return "%s%,d.%02d".formatted(CURRENCY_SYMBOL.get(), cents / 100, cents % 100);
     }

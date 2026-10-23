@@ -1,0 +1,38 @@
+[
+  {
+    "op": "pointer",
+    "x": 239,
+    "y": 74
+  },
+  {
+    "op": "wait",
+    "seconds": 0.4
+  },
+  {
+    "op": "click"
+  },
+  {
+    "op": "wait",
+    "seconds": 2
+  },
+  {
+    "op": "pointer",
+    "x": 60,
+    "y": 62
+  },
+  {
+    "op": "wait",
+    "seconds": 0.4
+  },
+  {
+    "op": "click"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.8
+  },
+  {
+    "op": "screenshot",
+    "name": "market-fixed"
+  }
+]

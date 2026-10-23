@@ -148,9 +148,17 @@ final class Cosmetics {
     }
 
     static boolean hat(ServerPlayer player) {
-        if (!allowed(player, "hat") || !player.getItemBySlot(EquipmentSlot.HEAD).isEmpty() || player.getMainHandItem().isEmpty()) return false;
+        return hat(player, player.getMainHandItem());
+    }
+
+    static boolean hat(ServerPlayer player, int slot) {
+        return slot >= 0 && slot < 36 && hat(player, player.getInventory().getItem(slot));
+    }
+
+    private static boolean hat(ServerPlayer player, ItemStack item) {
+        if (!allowed(player, "hat") || !player.getItemBySlot(EquipmentSlot.HEAD).isEmpty() || item.isEmpty()) return false;
         // shortcut: requires an empty helmet slot, add curse-safe swapping if players need to replace a worn hat
-        player.setItemSlot(EquipmentSlot.HEAD, player.getMainHandItem().split(1));
+        player.setItemSlot(EquipmentSlot.HEAD, item.split(1));
         player.inventoryMenu.broadcastChanges(); return true;
     }
 }

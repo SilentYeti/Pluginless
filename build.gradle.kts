@@ -61,9 +61,28 @@ neoForge {
     }
 }
 
+// The PDA front end needs WFLib's client API, which only exists for 1.21.1. It is compiled against the jar of a
+// sibling checkout (or -Pwflib.jar=...) and never shipped: at runtime WFLib is an optional mod.
+val wflibJar: File = listOfNotNull(findProperty("wflib.jar") as String?, System.getenv("WFLIB_JAR"),
+    "${rootProject.projectDir.parentFile}/WFLib-main/build/libs/wflib-1.8.36.jar",
+    "${System.getProperty("user.home")}/Codebases/WFLib-main/build/libs/wflib-1.8.36.jar")
+    .map { file(it) }.firstOrNull { it.exists() } ?: file("wflib-1.8.36.jar-not-found")
+// WFLib's UI canvas types live in GemRender, which WFLib requires at runtime; compile against the cached snapshot.
+val gemrenderJar: File? = fileTree("${gradle.gradleUserHomeDir}/caches/modules-2/files-2.1/com.wf.gemrender/gemrender-1.21.1/0.1.17-SNAPSHOT") {
+    include("**/gemrender-1.21.1-0.1.17-SNAPSHOT.jar")
+}.files.maxByOrNull { it.lastModified() }
+if (mcVersion == "1.21.1") {
+    sourceSets.main { java.srcDir("src/pda/java") }
+}
+
 dependencies {
     val ldlibClassifier = prop("deps.ldlib2_classifier").let { if (it.isBlank()) "" else ":$it" }
     implementation("com.lowdragmc.ldlib2:ldlib2-neoforge-${prop("deps.ldlib2_mc")}:${prop("deps.ldlib2")}$ldlibClassifier")
+
+    if (mcVersion == "1.21.1") {
+        compileOnly(files(wflibJar))
+        gemrenderJar?.let { compileOnly(files(it)) }
+    }
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

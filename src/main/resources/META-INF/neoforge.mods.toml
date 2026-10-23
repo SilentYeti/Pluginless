@@ -31,3 +31,11 @@ ${mod_description}
     versionRange="[${ldlib2_version},)"
     ordering="AFTER"
     side="BOTH"
+
+# The PDA app (1.21.1 only) is optional: without WFLib the ROTH terminal and the commands are the whole interface.
+[[dependencies.${mod_id}]]
+    modId="wflib"
+    type="optional"
+    versionRange="[1.8.36,)"
+    ordering="AFTER"
+    side="CLIENT"
