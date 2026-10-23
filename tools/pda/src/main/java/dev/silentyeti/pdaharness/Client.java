@@ -34,6 +34,14 @@ public final class Client {
             Files.delete(action);
             id = command.get("id").getAsInt();
             switch (command.get("op").getAsString()) {
+                case "assert_layout" -> {
+                    if (!PdaClient.focused() || PdaClient.app() == null)
+                        throw new IllegalStateException("Layout audit requires a focused PDA app");
+                    LayoutAudit.verifyGuard();
+                    int labels = LayoutAudit.check(PdaClient.app().build());
+                    Harness.write("result-" + id + ".json", Map.of("ok", true, "labels_checked", labels));
+                    return;
+                }
                 case "open" -> {
                     var appId = ResourceLocation.parse(command.get("app").getAsString());
                     var app = PdaApps.get(appId);
@@ -68,8 +76,27 @@ public final class Client {
                     }
                     var view = (JsonObject) state.getMethod("view", String.class).invoke(null, page);
                     if (!view.has("balance")) throw new IllegalStateException("No server snapshot for page " + page);
+                    if (command.has("values")) for (var expected : command.getAsJsonObject("values").entrySet()) {
+                        if (!expected.getValue().equals(view.get(expected.getKey())))
+                            throw new IllegalStateException("Snapshot " + expected.getKey() + ": expected "
+                                    + expected.getValue() + ", got " + view.get(expected.getKey()));
+                    }
                     Harness.write("result-" + id + ".json", Map.of("ok", true, "page", page, "view", view));
                     return;
+                }
+                case "assert_inventory" -> {
+                    String itemId = command.get("item").getAsString();
+                    int count = 0;
+                    boolean ownProfile = false;
+                    for (int slot = 0; slot < 36; slot++) {
+                        var stack = mc.player.getInventory().getItem(slot);
+                        if (!net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).toString().equals(itemId)) continue;
+                        count += stack.getCount();
+                        var profile = stack.get(net.minecraft.core.component.DataComponents.PROFILE);
+                        if (profile != null && profile.gameProfile().getName().equals(mc.player.getGameProfile().getName())) ownProfile = true;
+                    }
+                    if (count != command.get("count").getAsInt() || command.has("own_profile") && command.get("own_profile").getAsBoolean() && !ownProfile)
+                        throw new IllegalStateException("Inventory mismatch: " + itemId + " count=" + count + " ownProfile=" + ownProfile);
                 }
                 case "screenshot" -> {
                     int receipt = id;

@@ -29,10 +29,11 @@ final class Cosmetics {
         return Store.open(server, "cosmetics", Codec.unboundedMap(UUIDUtil.STRING_CODEC, Appearance.CODEC).xmap(HashMap::new, map -> map), HashMap::new);
     }
     static Appearance of(MinecraftServer server, UUID player) { return appearances(server).value.getOrDefault(player, new Appearance("", "", "")); }
-    /** Unlocked by the player's rank, or granted to the player from outside (a website store). */
+    /** Operators may test valid cosmetics; other players need a rank perk or individual grant. */
     static boolean allowed(ServerPlayer player, String perk) {
         var server = player.level().getServer();
-        return server != null && (RankGate.ranks.flag(RankGate.rankOf(server, player.getUUID()), perk)
+        return server != null && ((RankGate.isOperator(player) && valid(perk))
+                || RankGate.ranks.flag(RankGate.rankOf(server, player.getUUID()), perk)
                 || grants(server).value.getOrDefault(player.getUUID(), List.of()).contains(perk));
     }
     private static Store<Map<UUID, List<String>>> grants(MinecraftServer server) {

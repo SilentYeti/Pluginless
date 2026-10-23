@@ -292,6 +292,64 @@ final class SelfTest {
         alice.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.STONE)); as(alice, "hat");
         check("/hat preserves an occupied helmet slot and the held item", () -> alice.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).getItem() == Items.DIAMOND && alice.getMainHandItem().getItem() == Items.STONE);
         cosmeticsPda(alice, accounts, normal, ranks);
+        operatorCosmetics(accounts, normal);
+    }
+
+    private void operatorCosmetics(Accounts accounts, Ranks.Rank rank) {
+        var player = player("cosmetic_op");
+        var page = new CosmeticsPage();
+        var perks = rank.perks;
+        var price = SelfTest.<Double>configValue("SKULL_PRICE");
+        double oldPrice = price.get();
+        rank.perks = new java.util.LinkedHashMap<>();
+        online(player, true);
+        try {
+            accounts.set(player.getUUID(), 100_00);
+            check("ungranted nonoperators cannot self-apply cosmetics or get heads", () ->
+                    !page.view(server, player).get("namecolor_allowed").getAsBoolean()
+                    && !page.act(player, "color", List.of("#123456"), -1).ok()
+                    && !page.act(player, "skull", List.of(), -1).ok());
+            //? if >=26.1 {
+            /*server.getPlayerList().op(player.nameAndId());
+            *///?} else {
+            server.getPlayerList().op(player.getGameProfile());
+            //?}
+            check("operators unlock valid Cosmetics controls without rank perks", () ->
+                    List.of("namecolor", "namegradient", "nick", "skull", "hat").stream()
+                            .allMatch(perk -> page.view(server, player).get(perk + "_allowed").getAsBoolean())
+                    && !Cosmetics.allowed(player, "unknown"));
+            check("operators can apply their own colour gradient nickname and title through the PDA", () ->
+                    page.act(player, "color", List.of("#123456"), -1).ok()
+                    && page.act(player, "gradient", List.of("#ff0000", "#0000ff"), -1).ok()
+                    && page.act(player, "nick", List.of("OperatorYeti"), -1).ok()
+                    && page.act(player, "title", List.of("builder"), -1).ok());
+            price.set(1.0);
+            long balance = accounts.balance(player.getUUID());
+            check("operators receive their own profile-bearing skull and still pay its price", () ->
+                    page.act(player, "skull", List.of(), -1).ok() && items(player, Items.PLAYER_HEAD) == 1
+                    && headProfile(player) && accounts.balance(player.getUUID()) == balance - 100);
+            accounts.set(player.getUUID(), 0);
+            check("operator skull purchases cannot bypass insufficient funds", () ->
+                    !page.act(player, "skull", List.of(), -1).ok() && items(player, Items.PLAYER_HEAD) == 1);
+            player.getInventory().setItem(35, new ItemStack(Items.EMERALD, 2));
+            check("operators can wear exactly one selected inventory item", () ->
+                    page.act(player, "hat", List.of(), 35).ok()
+                    && player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).is(Items.EMERALD)
+                    && player.getInventory().getItem(35).getCount() == 1);
+        } finally {
+            //? if >=26.1 {
+            /*server.getPlayerList().deop(player.nameAndId());
+            *///?} else {
+            server.getPlayerList().deop(player.getGameProfile());
+            //?}
+            check("removing operator status immediately restores cosmetic locks", () ->
+                    !page.view(server, player).get("nick_allowed").getAsBoolean()
+                    && !page.act(player, "nick", List.of("NoLongerOp"), -1).ok()
+                    && Cosmetics.of(server, player.getUUID()).nick().equals("OperatorYeti"));
+            rank.perks = perks;
+            price.set(oldPrice);
+            online(player, false);
+        }
     }
 
     private void cosmeticsPda(Tester alice, Accounts accounts, Ranks.Rank rank, Ranks ranks) {

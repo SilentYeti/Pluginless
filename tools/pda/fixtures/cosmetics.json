@@ -1,0 +1,20 @@
+{
+  "defaultRank": "default",
+  "ranks": {
+    "default": {
+      "perks": {
+        "namecolor": true,
+        "namegradient": true,
+        "nick": true,
+        "skull": true,
+        "hat": true,
+        "title.builder": true
+      },
+      "allow": [],
+      "deny": []
+    }
+  },
+  "cooldowns": {},
+  "kits": {},
+  "tracks": {}
+}

@@ -22,6 +22,7 @@ neoForge {
     mods { pdaharness { sourceSet sourceSets.main } }
 }
 dependencies {
+    compileOnly files(project.property('gemrenderJar'))
     implementation files(project.property('pluginlessJar'), project.property('wflibJar'))
     implementation files(project.property('ahfJar'), project.property('ldlibJar'))
     if (project.property('mode') == 'client') {

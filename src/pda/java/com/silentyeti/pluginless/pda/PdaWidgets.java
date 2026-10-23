@@ -24,7 +24,7 @@ public final class PdaWidgets {
     /** {@code enabled}: a signal expression such as {@code pda_pl_bank.can_pay}. */
     public static WidgetDef button(String label, String enabled, Runnable run) {
         return new Button(item -> run.run(), enabled, PdaShell.PANEL, PdaShell.HOVER, PdaShell.PRESS, PdaShell.EDGE,
-                1, 0, 4, 1, 0, 13, Point.TOP_LEFT, text(label, PdaShell.TEXT));
+                1, 0, 4, 1, 0, 13, Point.LEFT, text(label, PdaShell.TEXT));
     }
 
     /** A button drawn with the accent while {@code selected} (a signal expression) holds. */
@@ -32,18 +32,18 @@ public final class PdaWidgets {
         UiAction action = item -> run.run();
         return when(selected,
                 new Button(action, "true", PdaShell.PRESS, PdaShell.HOVER, PdaShell.PRESS, PdaShell.ACCENT,
-                        1, 0, 4, 1, 0, 13, Point.TOP_LEFT, text(label, PdaShell.ACCENT)),
+                        1, 0, 4, 1, 0, 13, Point.LEFT, text(label, PdaShell.ACCENT)),
                 new Button(action, "true", PdaShell.PANEL, PdaShell.HOVER, PdaShell.PRESS, PdaShell.EDGE,
-                        1, 0, 4, 1, 0, 13, Point.TOP_LEFT, text(label, PdaShell.TEXT)));
+                        1, 0, 4, 1, 0, 13, Point.LEFT, text(label, PdaShell.TEXT)));
     }
 
     /** A full-width list row button; {@code label} is a template over the row's item signals. */
     public static WidgetDef row(String template, float width, String selected, UiAction action) {
         return when(selected,
                 new Button(action, "true", PdaShell.PRESS, PdaShell.HOVER, PdaShell.PRESS, PdaShell.ACCENT,
-                        1, 0, 4, 1, width, 11, Point.TOP_LEFT, text(template, PdaShell.ACCENT)),
+                        1, 0, 4, 1, width, 11, Point.LEFT, new com.wf.wflib.ui.widget.Text(template, PdaShell.ACCENT, false, "1", Float.toString(width - 8))),
                 new Button(action, "true", PdaShell.PANEL, PdaShell.HOVER, PdaShell.PRESS, PdaShell.PANEL,
-                        1, 0, 4, 1, width, 11, Point.TOP_LEFT, text(template, PdaShell.TEXT)));
+                        1, 0, 4, 1, width, 11, Point.LEFT, new com.wf.wflib.ui.widget.Text(template, PdaShell.TEXT, false, "1", Float.toString(width - 8))));
     }
 
     /** A bordered panel with a dim title; callers place their own content with absolute coordinates. */

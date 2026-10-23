@@ -42,6 +42,16 @@ Repeat `--script` to run several independent page files in the same client/serve
 
 Each scenario closes/reopens the app, checks the Home snapshot, moves the PDA pointer to its tile and sends a real mouse click. It asserts the selected page and receipt of its server snapshot, captures `pluginless-PAGE.png`, then clicks BACK and checks Home again. The assertions read the public `PdaClientState.page()` and `view()` methods; they never select the page directly. A tile still marked SOON fails the page assertion, so a screenshot of Home cannot pass as a finished page. Snapshot assertions establish delivery, not correctness of every field or feature action.
 
+To check label alignment across all eight pages and five Cosmetics tabs, then apply colour/gradient and receive your own profile-bearing head:
+
+```sh
+python3 tools/pda/run.py --apps pluginless:pluginless \
+  --ranks tools/pda/fixtures/cosmetics.json \
+  --script tools/pda/scenarios/layout-and-cosmetics.json
+```
+
+`assert_layout` measures and draws the current app tree with the loaded game font into an empty clip. It checks nonempty button contents for border containment and direct text labels for vertical centering, including disabled controls. A deliberately misaligned control must fail before the real layout may pass. This checks the current visible state; it does not prove every possible translation, resource-pack font, inventory or server-configured string fits. The fixture grants cosmetics to the test rank only; production players still need their configured perks/grants, while operators can use valid cosmetics. `assert_page` accepts optional `values` for exact server-snapshot assertions; `assert_inventory` checks an item count and optional `own_profile` on delivered skulls.
+
 Tile coordinates match the foundation's four-column 86x40 grid with 8-unit gaps, at `(8,18)` below WFLib's and Pluginless's 18-unit bars. A layout change needs updated scenario coordinates. Page workers can append feature-specific steps to their scenario without changing the runner.
 
 To drive keys, typing, cursor movement and clicks in an app, append a JSON script:

@@ -59,6 +59,8 @@ final class CosmeticsClientPage implements PdaClientPage {
     public void signals() {
         Signals.num(PlApp.APP, "cos_tab", app -> tab);
         Signals.text(PlApp.APP, "cos_lock", 64, app -> {
+            if (tab == 4) return "SKULL: " + (allowed("skull") ? "unlocked" : "rank/grant required")
+                    + " | HAT: " + (allowed("hat") ? "unlocked" : "rank/grant required");
             if (tab == 3) return "Titles unlock through your rank or an individual grant.";
             String perk = PERKS[tab];
             return allowed(perk) ? "Preview changes, then apply." : "LOCKED: requires rank perk or grant: " + perk;
@@ -132,11 +134,19 @@ final class CosmeticsClientPage implements PdaClientPage {
                 new com.wf.wflib.ui.widget.Text(label, PdaShell.TEXT, false, "1", Float.toString(width - 8)));
     }
 
+    private WidgetDef tabButton(String label, UiAction action, boolean selected) {
+        return new Button(action, "true", selected ? PdaShell.PRESS : PdaShell.PANEL,
+                PdaShell.HOVER, PdaShell.PRESS, selected ? PdaShell.ACCENT : PdaShell.EDGE,
+                1, 0, 4, 2, 70, 20, Point.CENTER,
+                new com.wf.wflib.ui.widget.Text(label, selected ? PdaShell.ACCENT : PdaShell.TEXT, false, "1", "62"));
+    }
+
     public WidgetDef build() {
         var tabs = new ArrayList<WidgetDef>();
         for (int i = 0; i < TABS.length; i++) {
             int index = i;
-            tabs.add(sized(70, 20, PdaWidgets.chip(TABS[i], "pda_pl.cos_tab == " + index, () -> tab = index)));
+            UiAction action = item -> tab = index;
+            tabs.add(when("pda_pl.cos_tab == " + index, tabButton(TABS[i], action, true), tabButton(TABS[i], action, false)));
         }
         var swatches = new ArrayList<WidgetDef>();
         for (var hex : COLORS) swatches.add(new Button(item -> color = hex, "true", "#ff" + hex.substring(1), "#ff" + hex.substring(1), "#ff" + hex.substring(1), PdaShell.EDGE,
