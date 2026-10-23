@@ -56,15 +56,15 @@ final class AmountBar {
     }
 
     /** One row at {@code y}: stepper, chips, shortcuts, TYPE. */
-    List<WidgetDef> widgets(float y, Shortcut... shortcuts) {
+    List<WidgetDef> widgets(float left, float y, Shortcut... shortcuts) {
         var tree = new ArrayList<WidgetDef>();
-        tree.add(at(8, y, button("-", () -> adjust(-1))));
-        tree.add(at(26, y + 3, text("{" + subject + ".amount}", PdaShell.ACCENT)));
-        tree.add(at(72, y, button("+", () -> adjust(1))));
-        float x = 92;
+        tree.add(at(left, y, button("-", () -> adjust(-1))));
+        tree.add(at(left + 18, y + 3, text("{" + subject + ".amount}", PdaShell.ACCENT)));
+        tree.add(at(left + 64, y, button("+", () -> adjust(1))));
+        float x = left + 84;
         for (int i = 0; i < steps.length; i++) {
             long value = steps[i];
-            String label = value >= 100_000 ? "$" + value / 100_000 + "K" : "$" + value / 100;
+            String label = value < 100 ? value + "C" : value >= 100_000 ? "$" + value / 100_000 + "K" : "$" + value / 100;
             tree.add(at(x, y, chip(label, subject + ".step" + i, () -> step = value)));
             x += 10 + label.length() * 4.3f;
         }

@@ -122,7 +122,7 @@ final class BankClientPage implements PdaClientPage {
 
     public WidgetDef build() {
         UiAction pick = item -> target = ((Person) item).name();
-        var tree = new ArrayList<WidgetDef>(BAR.widgets(6,
+        var tree = new ArrayList<WidgetDef>(BAR.widgets(8, 6,
                 new AmountBar.Shortcut("BAL", 20, BankClientPage::balance),
                 new AmountBar.Shortcut("DEBT", 24, () -> Math.min(debt(), balance()))));
         tree.add(at(300, 9, text("{pda_pl_bank.fee}", PdaShell.DIM)));

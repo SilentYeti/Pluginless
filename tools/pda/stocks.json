@@ -1,0 +1,82 @@
+[
+  {
+    "op": "pointer",
+    "x": 333,
+    "y": 74
+  },
+  {
+    "op": "wait",
+    "seconds": 0.4
+  },
+  {
+    "op": "click"
+  },
+  {
+    "op": "wait",
+    "seconds": 2
+  },
+  {
+    "op": "screenshot",
+    "name": "stocks-market"
+  },
+  {
+    "op": "pointer",
+    "x": 176,
+    "y": 170
+  },
+  {
+    "op": "wait",
+    "seconds": 0.4
+  },
+  {
+    "op": "click"
+  },
+  {
+    "op": "wait",
+    "seconds": 1.5
+  },
+  {
+    "op": "screenshot",
+    "name": "stocks-bought"
+  },
+  {
+    "op": "pointer",
+    "x": 62,
+    "y": 46
+  },
+  {
+    "op": "wait",
+    "seconds": 0.4
+  },
+  {
+    "op": "click"
+  },
+  {
+    "op": "wait",
+    "seconds": 1.0
+  },
+  {
+    "op": "screenshot",
+    "name": "stocks-margin"
+  },
+  {
+    "op": "pointer",
+    "x": 104,
+    "y": 46
+  },
+  {
+    "op": "wait",
+    "seconds": 0.4
+  },
+  {
+    "op": "click"
+  },
+  {
+    "op": "wait",
+    "seconds": 1.0
+  },
+  {
+    "op": "screenshot",
+    "name": "stocks-shorts"
+  }
+]

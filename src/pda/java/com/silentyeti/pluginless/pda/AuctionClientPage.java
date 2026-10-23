@@ -228,7 +228,7 @@ final class AuctionClientPage implements PdaClientPage {
                     if (slot >= 0) PdaClientSetup.send("auction", auctionMode ? "auction" : "sell", java.util.List.of(Long.toString(BAR.amount)), slot);
                 })))));
 
-        tree.addAll(BAR.widgets(160, new AmountBar.Shortcut("MIN", 22, () -> {
+        tree.addAll(BAR.widgets(8, 160, new AmountBar.Shortcut("MIN", 22, () -> {
             var chosen = current();
             return tab == 2 ? number(view(), "min") : chosen == null ? 0 : flag(chosen, "auction") ? number(chosen, "minBid") : number(chosen, "price");
         })));

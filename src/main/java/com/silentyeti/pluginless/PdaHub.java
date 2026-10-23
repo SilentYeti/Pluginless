@@ -119,7 +119,7 @@ public final class PdaHub {
         sender.view(player, page.id(), json);
     }
 
-    public static synchronized void left(ServerPlayer player) { SESSIONS.remove(player.getUUID()); AuctionPage.left(player.getUUID()); }
+    public static synchronized void left(ServerPlayer player) { SESSIONS.remove(player.getUUID()); AuctionPage.left(player.getUUID()); MarketPage.left(player.getUUID()); StocksPage.left(player.getUUID()); }
 
     public static synchronized void stopped() { SESSIONS.clear(); Notices.clear(); }
 
