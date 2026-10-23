@@ -802,6 +802,40 @@ final class SelfTest {
         check("company and shop commands are listed in /pluginless", () -> help.contains("/company") && help.contains("/shops") && help.contains("/shop "));
     }
 
+    /** The Stocks PDA page: snapshot, selection, trade, margin and short intents, then every balance and price put back. */
+    private void stocksPda(Tester alice, Accounts accounts, Stocks.State state) {
+        var page = new StocksPage();
+        var a = alice.getUUID();
+        check("PDA stocks snapshot lists the stock with its live quotes", () -> {
+            var view = page.view(server, alice);
+            return view.get("ticker").getAsString().equals("TEST") && view.get("buy").getAsLong() == 10_10 && view.get("sell").getAsLong() == 9_90
+                    && view.getAsJsonArray("stocks").size() == 1 && view.getAsJsonObject("margin").get("loan").getAsLong() == 0;
+        });
+        check("PDA stocks selection accepts a real ticker and refuses others", () -> page.act(alice, "select", List.of("TEST"), -1).ok()
+                && !page.act(alice, "select", List.of("NOPE"), -1).ok() && !page.act(alice, "select", List.of("TEST", "x"), -1).ok());
+        check("PDA stocks refuse malformed trade intents without trading", () -> !page.act(alice, "buy", List.of("TEST", "0"), -1).ok()
+                && !page.act(alice, "buy", List.of("TEST", "abc"), -1).ok() && !page.act(alice, "buy", List.of("TEST x", "1"), -1).ok()
+                && !page.act(alice, "buy", List.of("TEST"), -1).ok() && !page.act(alice, "buy", List.of("TEST", "2000000"), -1).ok()
+                && StockExchange.held(server, a, "TEST") == 0 && accounts.balance(a) == 10_000_00);
+        check("PDA stocks buy runs the real /stock buy", () -> page.act(alice, "buy", List.of("TEST", "10"), -1).ok() && StockExchange.held(server, a, "TEST") == 10
+                && accounts.balance(a) < 10_000_00 && page.view(server, alice).getAsJsonArray("stocks").get(0).getAsJsonObject().get("held").getAsLong() == 10);
+        check("PDA stocks margin borrow and repay run the real /margin commands", () -> page.act(alice, "borrow", List.of("100"), -1).ok() && Margin.loan(server, a) == 100
+                && page.view(server, alice).getAsJsonObject("margin").get("loan").getAsLong() == 100
+                && !page.act(alice, "sell", List.of("TEST", "10"), -1).ok() && StockExchange.held(server, a, "TEST") == 10
+                && page.act(alice, "repay", List.of("100"), -1).ok() && Margin.loan(server, a) == 0);
+        check("PDA stocks refuse a margin amount that is not cents", () -> !page.act(alice, "borrow", List.of("0"), -1).ok() && !page.act(alice, "borrow", List.of("-5"), -1).ok()
+                && !page.act(alice, "repay", List.of("1.5"), -1).ok() && Margin.loan(server, a) == 0);
+        check("PDA stocks open and close a short through the real commands", () -> page.act(alice, "open", List.of("TEST", "5"), -1).ok()
+                && Shorts.position(server, a, "TEST") != null && page.view(server, alice).getAsJsonObject("shorts").getAsJsonArray("positions").size() == 1
+                && page.act(alice, "close", List.of("TEST"), -1).ok() && Shorts.position(server, a, "TEST") == null);
+        check("PDA stocks sell runs the real /stock sell", () -> page.act(alice, "sell", List.of("TEST", "10"), -1).ok() && StockExchange.held(server, a, "TEST") == 0);
+        check("PDA stocks refuse unknown verbs", () -> !page.act(alice, "admin", List.of("TEST"), -1).ok());
+        // Put back what the next checks assume: price, balances, the daily payout counter.
+        state.price = 10; state.lastMove = 0;
+        accounts.set(a, 10_000_00); accounts.set(Accounts.SERVER, 0); accounts.set(Accounts.ESCROW, 0);
+        StockExchange.store(server).value.paid = 0;
+    }
+
     private void stocks(Tester alice, Tester bob, Accounts accounts) {
         var a = alice.getUUID();
         var configured = StockExchange.config;
@@ -816,6 +850,7 @@ final class SelfTest {
             var state = StockExchange.state(server, "TEST"); state.price = 10; state.frozen = false; state.nudgeLeft = 0; state.trendUntil = 0; state.lastMove = 0;
             accounts.set(a, 10_000_00); accounts.set(Accounts.SERVER, 0);
             as(alice, "stock"); check("/stock opens the stock screen", () -> alice.takeOpened() instanceof ModularUIContainerMenu);
+            stocksPda(alice, accounts, state);
             as(alice, "stock buy TEST 100");
             // 100 shares at 1% pressure per 100 moves 10.00 to 10.10; the buyer pays half the 2% spread on top.
             check("buying moves the price first and pays the server the worse price", () -> StockExchange.held(server, a, "TEST") == 100
