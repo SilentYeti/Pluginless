@@ -32,7 +32,8 @@ public final class PdaClientState {
 
     static void result(String id, boolean ok, String text) {
         if (text.isEmpty()) return;
-        message = text;
+        // Keys (pluginless.pda.*, command replies) are translated here; plain text passes through unchanged.
+        message = net.minecraft.network.chat.Component.translatable(text).getString();
         messageOk = ok;
         messageTime = System.currentTimeMillis();
     }

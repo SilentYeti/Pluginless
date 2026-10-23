@@ -124,6 +124,7 @@ public final class Bank {
                 || !requests(server).put(sender.getUUID(), target.id(), cents, Config.paymentRequestMillis(), System.currentTimeMillis())) return false;
         var receiver = server.getPlayerList().getPlayer(target.id());
         if (receiver != null) receiver.sendSystemMessage(Component.translatable("pluginless.bank.requested", sender.getScoreboardName(), Config.format(cents)));
+        Notices.push(target.id(), "bank", sender.getScoreboardName() + " requests " + Config.format(cents), System.currentTimeMillis());
         return true;
     }
 
@@ -136,6 +137,7 @@ public final class Bank {
                 .transfer(player.getUUID(), request.sender(), request.value());
         var sender = server.getPlayerList().getPlayer(request.sender());
         if (sender != null) sender.sendSystemMessage(Component.translatable(ok && accept ? "pluginless.bank.accepted" : "pluginless.bank.declined", player.getScoreboardName()));
+        Notices.push(request.sender(), "bank", player.getScoreboardName() + (ok && accept ? " paid your request of " : " declined your request of ") + Config.format(request.value()), System.currentTimeMillis());
         return ok;
     }
 

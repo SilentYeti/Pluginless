@@ -1,0 +1,58 @@
+[
+  {
+    "op": "pointer",
+    "x": 51,
+    "y": 74
+  },
+  {
+    "op": "wait",
+    "seconds": 0.3
+  },
+  {
+    "op": "click"
+  },
+  {
+    "op": "wait",
+    "seconds": 1.5
+  },
+  {
+    "op": "pointer",
+    "x": 60,
+    "y": 94
+  },
+  {
+    "op": "wait",
+    "seconds": 0.3
+  },
+  {
+    "op": "click"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.6
+  },
+  {
+    "op": "screenshot",
+    "name": "bank-picked"
+  },
+  {
+    "op": "pointer",
+    "x": 20,
+    "y": 207
+  },
+  {
+    "op": "wait",
+    "seconds": 0.3
+  },
+  {
+    "op": "click"
+  },
+  {
+    "op": "wait",
+    "seconds": 1.5
+  },
+  {
+    "op": "screenshot",
+    "name": "bank-after-pay"
+  }
+]

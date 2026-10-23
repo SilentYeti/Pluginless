@@ -25,7 +25,7 @@ public final class PdaClientSetup {
 
     /** Pages in tile order; a card adds its page here. The home page is always first. */
     static List<PdaClientPage> pages() {
-        return List.of(new HomeClientPage());
+        return List.of(new HomeClientPage(), new BankClientPage());
     }
 
     /** True when the connected server has this mod's PDA channels. */

@@ -329,5 +329,8 @@
   "pluginless.shares.ui.takeover": "Take over (needs over half the shares)",
   "pluginless.shares.ui.keep": "Shares the owner keeps when issuing",
   "pluginless.shares.ui.issue": "Issue quantity at price (owner)",
-  "pluginless.shares.ui.dividend": "Pay dividend of price field (owner, managers)"
+  "pluginless.shares.ui.dividend": "Pay dividend of price field (owner, managers)",
+  "pluginless.pda.slow": "Slow down",
+  "pluginless.pda.invalid": "That cannot be done",
+  "pluginless.pda.error": "Something went wrong"
 }
