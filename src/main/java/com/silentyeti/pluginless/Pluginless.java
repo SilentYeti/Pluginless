@@ -70,6 +70,11 @@ public final class Pluginless {
         PlayerUIMenuType.register(COMPANY_UI, player -> CompanyUI::create);
         PlayerUIMenuType.register(SHOP_UI, player -> CompanyUI::shops);
 
+        PdaHub.register(new HomePage());
+        //? if <26.1 {
+        com.silentyeti.pluginless.pda.PdaNet.register(modBus);
+        //?}
+
         modBus.addListener((BuildCreativeModeTabContentsEvent event) -> {
             if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) event.accept(ROTH_TERMINAL);
         });
@@ -104,10 +109,11 @@ public final class Pluginless {
         });
         NeoForge.EVENT_BUS.addListener((ServerTickEvent.Post event) -> {
             Teleports.tick(event.getServer(), System.currentTimeMillis());
+            PdaHub.tick(event.getServer());
             if (scheduler != null) scheduler.tick(System.nanoTime() / 1_000_000);
         });
         NeoForge.EVENT_BUS.addListener((ServerStoppedEvent event) -> {
-            scheduler = null; ClaimCompat.clear(); Teleports.clear(event.getServer()); Bank.clear(event.getServer()); Income.clear(); Companies.SELECTED.clear();
+            scheduler = null; ClaimCompat.clear(); Teleports.clear(event.getServer()); Bank.clear(event.getServer()); Income.clear(); Companies.SELECTED.clear(); PdaHub.stopped();
         });
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.entity.living.LivingDamageEvent.Post event) -> {
             if (event.getOriginalDamage() > event.getBlockedDamage() && event.getEntity() instanceof ServerPlayer player) Teleports.cancel(player);
@@ -128,6 +134,7 @@ public final class Pluginless {
         NeoForge.EVENT_BUS.addListener((PlayerEvent.PlayerLoggedOutEvent event) -> {
             if (event.getEntity() instanceof ServerPlayer player) {
                 Teleports.leave(player);
+                PdaHub.left(player);
                 var server = player.level().getServer();
                 if (server != null) Bank.requests(server).remove(player.getUUID());
             }
