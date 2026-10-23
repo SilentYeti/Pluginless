@@ -783,6 +783,15 @@ final class SelfTest {
             Margin.tick(server, System.currentTimeMillis()); long sold = Stocks.quote(stock, state, false) * 100;
             check("a forced sale that covers the loan pays the rest to the player", () -> Margin.loan(server, a) == 0 && Bank.debt(server, a) == 0 && accounts.balance(a) == cash + sold - 900_00);
 
+            // A payout that fails after the sale keeps the loan and its proceeds, and the next tick finishes the job.
+            accounts.set(Accounts.SERVER, 1_000_00); accounts.set(a, Long.MAX_VALUE - 10);
+            Margin.loans(server).value.put(a, new MarginBook.Loan(new Debts.Debt(100_00, 100_00, System.currentTimeMillis()), false, java.util.Optional.of(150_00L)));
+            Margin.tick(server, System.currentTimeMillis());
+            check("a failed liquidation payout keeps the sold loan to retry", () -> Margin.loans(server).value.get(a) != null && Margin.loans(server).value.get(a).sold() && accounts.balance(a) == Long.MAX_VALUE - 10);
+            as(alice, "margin borrow 1"); check("a loan waiting to settle cannot be borrowed on", () -> Margin.loans(server).value.get(a).debt().amount() == 100_00);
+            accounts.set(a, 1_000_00); Margin.tick(server, System.currentTimeMillis());
+            check("the retry pays the surplus and drops the loan", () -> Margin.loans(server).value.get(a) == null && accounts.balance(a) == 1_000_00 + 50_00);
+
             // Short selling: pressure is off, so the sell quote is 1% under the price and the buy quote 1% over.
             state.price = 10; accounts.set(a, 5_000_00); accounts.set(Accounts.ESCROW, 0); long entry = 100 * 9_90, deposit = entry / 2;
             as(alice, "short open TEST 100");
