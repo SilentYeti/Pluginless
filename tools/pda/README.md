@@ -48,3 +48,29 @@ Artifacts in the printed run directory:
 - `control/`: seed/readiness receipts and action responses.
 
 A screenshot passing means the requested view rendered; inspect the image to judge layout. This harness does not assert every feature's balances, transactions, permissions or visual correctness. Extend scenario scripts alongside the apps; the full feature suite remains separate (`tools/selftest.py`).
+
+## Prism instance for manual PDA testing
+
+The separate **Pluginless PDA test** instance uses Minecraft 1.21.1, NeoForge 21.1.248 and Java 21. It lives in `~/.local/share/PrismLauncher/instances/Pluginless-PDA-Test`. Select it in Prism and click Launch, or run:
+
+```sh
+prismlauncher --launch Pluginless-PDA-Test
+```
+
+If Prism was already open while the folder was created and does not show it, reopen the launcher. First launch may download the pinned Minecraft/NeoForge files. No existing Prism instance, account or global launcher settings are changed.
+
+Open Singleplayer → **Pluginless PDA test**. This is a copy of the disposable superflat harness world, with Creative and cheats enabled, the seeded treasury/stocks/diamond listing, and a PDA in the singleplayer inventory. Select it and right-click, then HOME → Pluginless. If needed, `/give @s wflib:pda` supplies another PDA. A different real player identity does not inherit PdaTester's ledger balance: use `/eco set <your-player-name> 25000` to fund yourself. The seeded seller and server treasury remain available. Audio is on (`soundCategory_master:1.0` on initial setup).
+
+`minecraft/mods` contains symlinks to the combined Pluginless output, WFLib 1.8.36 and the same cached AHF/LDLib2/GemRender/Flywheel versions used by the harness. Rebuilding the linked output updates what the next Prism launch loads. Close Minecraft before rebuilding. There is no development harness mod in this instance.
+
+To refresh links and the hash/source-commit receipt after a rebuild:
+
+```sh
+python3 tools/pda/prism.py
+```
+
+To select a different combined build, use `--pluginless-jar /path/to/versions/1.21.1/build/libs/pluginless-0.1.0+1.21.1.jar`; `--wflib-jar` can select a new WFLib output. `pluginless-pda-instance.json` in the instance folder records exact linked paths, hashes at refresh and source checkout HEADs. Symlinks track later rebuilds, so refresh the receipt when recording a new test.
+
+For initial setup elsewhere, provide `--instance /path/to/a/new/instance`, `--pluginless-jar ...` and optionally `--seed-world /path/to/a/stopped/harness/server/world`. The helper refuses unmarked existing instances, unmanaged mod collisions and overwriting an existing world. Refreshing a marked instance preserves options, launcher settings and played saves.
+
+Prism's [official CLI documentation](https://www.prismlauncher.org/wiki/getting-started/command-line-interface/) describes `--launch` and instance folder IDs.
