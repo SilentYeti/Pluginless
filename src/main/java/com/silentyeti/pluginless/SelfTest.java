@@ -309,6 +309,22 @@ final class SelfTest {
                     !page.view(server, player).get("namecolor_allowed").getAsBoolean()
                     && !page.act(player, "color", List.of("#123456"), -1).ok()
                     && !page.act(player, "skull", List.of(), -1).ok());
+            record Locked(String verb, List<String> args, int slot, String perk) {}
+            for (var locked : List.of(new Locked("nick", List.of("NewName"), -1, "nick"),
+                    new Locked("color", List.of("#123456"), -1, "namecolor"),
+                    new Locked("gradient", List.of("#ff0000", "#0000ff"), -1, "namegradient"),
+                    new Locked("title", List.of("builder"), -1, "title.builder"),
+                    new Locked("skull", List.of(), -1, "skull"), new Locked("hat", List.of(), 35, "hat"))) {
+                check("locked " + locked.perk() + " explicitly names the missing rank perk/grant in terminal feedback", () -> {
+                    var result = page.act(player, locked.verb(), locked.args(), locked.slot());
+                    return !result.ok() && result.message().contains(locked.perk())
+                            && result.message().contains("rank perk or grant")
+                            && result.message().equals(Component.translatable("pluginless.cosmetic.locked", locked.perk()).getString())
+                            && CosmeticsUI.feedback(result).getString().equals(result.message());
+                });
+            }
+            check("terminal labels explicitly explain a missing cosmetic perk/grant", () ->
+                    CosmeticsUI.access(player, "namecolor").getString().equals(Component.translatable("pluginless.cosmetic.locked", "namecolor").getString()));
             //? if >=26.1 {
             /*server.getPlayerList().op(player.nameAndId());
             *///?} else {
@@ -318,6 +334,8 @@ final class SelfTest {
                     List.of("namecolor", "namegradient", "nick", "skull", "hat").stream()
                             .allMatch(perk -> page.view(server, player).get(perk + "_allowed").getAsBoolean())
                     && !Cosmetics.allowed(player, "unknown"));
+            check("terminal labels show operator access as unlocked", () ->
+                    CosmeticsUI.access(player, "skull").getString().equals(Component.translatable("pluginless.cosmetic.unlocked", "skull").getString()));
             check("operators can apply their own colour gradient nickname and title through the PDA", () ->
                     page.act(player, "color", List.of("#123456"), -1).ok()
                     && page.act(player, "gradient", List.of("#ff0000", "#0000ff"), -1).ok()

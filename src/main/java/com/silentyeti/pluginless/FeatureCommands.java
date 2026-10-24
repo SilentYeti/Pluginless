@@ -101,7 +101,8 @@ final class FeatureCommands {
             PlayerUIMenuType.openUI(ctx.getSource().getPlayerOrException(), Pluginless.COSMETICS_UI); return 1;
         }));
         dispatcher.register(literal("nick").then(argument("name", StringArgumentType.word())
-                .executes(ctx -> action(ctx, player -> Cosmetics.nick(player, StringArgumentType.getString(ctx, "name")), "cosmetic"))));
+                .executes(ctx -> cosmetic(ctx, StringArgumentType.getString(ctx, "name").equalsIgnoreCase("off") ? null : "nick",
+                        player -> Cosmetics.nick(player, StringArgumentType.getString(ctx, "name"))))));
         dispatcher.register(literal("realname").then(argument("nick", StringArgumentType.word()).executes(ctx -> {
             var names = Cosmetics.realnames(ctx.getSource().getServer(), StringArgumentType.getString(ctx, "nick"));
             ctx.getSource().sendSuccess(() -> Component.translatable("pluginless.cosmetic.realname", String.join(", ", names)), false); return names.isEmpty() ? 0 : 1;
@@ -110,7 +111,8 @@ final class FeatureCommands {
             String color = StringArgumentType.getString(ctx, "color").trim();
             try {
                 String setting = color.equals("off") ? "off" : CosmeticNames.color(color);
-                return action(ctx, player -> Cosmetics.color(player, setting), "cosmetic");
+                return cosmetic(ctx, setting.equals("off") ? null : (setting.startsWith("<gradient:") ? "namegradient" : "namecolor"),
+                        player -> Cosmetics.color(player, setting));
             } catch (IllegalArgumentException e) { return failure(ctx, "cosmetic"); }
         })));
         dispatcher.register(literal("namegradient").then(argument("colors", StringArgumentType.greedyString()).executes(ctx -> {
@@ -120,21 +122,25 @@ final class FeatureCommands {
             if (colors.length != 2) return failure(ctx, "cosmetic");
             try {
                 String setting = CosmeticNames.gradient(colors[0], colors[1]);
-                return action(ctx, player -> Cosmetics.color(player, setting), "cosmetic");
+                return cosmetic(ctx, setting.equals("off") ? null : (setting.startsWith("<gradient:") ? "namegradient" : "namecolor"),
+                        player -> Cosmetics.color(player, setting));
             } catch (IllegalArgumentException e) { return failure(ctx, "cosmetic"); }
         })));
         dispatcher.register(literal("skull").then(Commands.player().executes(ctx -> {
             var target = Commands.one(ctx);
-            return action(ctx, player -> Cosmetics.skull(player, target), "cosmetic");
+            return cosmetic(ctx, "skull", player -> Cosmetics.skull(player, target));
         })));
-        dispatcher.register(literal("hat").executes(ctx -> action(ctx, Cosmetics::hat, "cosmetic"))
+        dispatcher.register(literal("hat").executes(ctx -> cosmetic(ctx, "hat", Cosmetics::hat))
                 .then(argument("slot", IntegerArgumentType.integer(0, 35)).executes(ctx ->
-                        action(ctx, player -> Cosmetics.hat(player, IntegerArgumentType.getInteger(ctx, "slot")), "cosmetic"))));
+                        cosmetic(ctx, "hat", player -> Cosmetics.hat(player, IntegerArgumentType.getInteger(ctx, "slot"))))));
         dispatcher.register(literal("nametitle").executes(ctx -> {
                     ctx.getSource().sendSuccess(() -> Component.translatable("pluginless.cosmetic.titles", String.join(", ", Features.settings.titles.keySet())), false); return 1;
                 }).then(argument("name", StringArgumentType.word())
                         .suggests((ctx, builder) -> SharedSuggestionProvider.suggest(Features.settings.titles.keySet(), builder))
-                        .executes(ctx -> action(ctx, player -> Cosmetics.title(player, StringArgumentType.getString(ctx, "name")), "cosmetic"))));
+                        .executes(ctx -> cosmetic(ctx, !StringArgumentType.getString(ctx, "name").equals("off")
+                                        && Features.settings.titles.containsKey(StringArgumentType.getString(ctx, "name"))
+                                        ? "title." + StringArgumentType.getString(ctx, "name") : null,
+                                player -> Cosmetics.title(player, StringArgumentType.getString(ctx, "name"))))));
     }
 
     private static void income(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -388,6 +394,14 @@ final class FeatureCommands {
             case "delhome" -> Teleports.delHome(player, name);
             default -> Teleports.go(player, "home", Teleports.homesOf(ctx.getSource().getServer(), player.getUUID()).get(name));
         }, "teleport");
+    }
+
+    private static int cosmetic(CommandContext<CommandSourceStack> ctx, String perk, Predicate<ServerPlayer> apply) throws CommandSyntaxException {
+        if (perk != null && !Cosmetics.allowed(ctx.getSource().getPlayerOrException(), perk)) {
+            ctx.getSource().sendFailure(Component.translatable("pluginless.cosmetic.locked", perk));
+            return 0;
+        }
+        return action(ctx, apply, "cosmetic");
     }
 
     private static int action(CommandContext<CommandSourceStack> ctx, Predicate<ServerPlayer> action, String feature) throws CommandSyntaxException {
