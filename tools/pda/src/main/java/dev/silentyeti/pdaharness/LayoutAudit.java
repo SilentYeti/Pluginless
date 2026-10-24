@@ -15,6 +15,8 @@ import java.util.List;
 /** Measures the real widget tree with the loaded font; no screenshot pixel guesses or fake font widths. */
 final class LayoutAudit {
     private final List<String> errors = new ArrayList<>();
+    private record Box(float x, float y, float width, float height, String label) {}
+    private final List<Box> boxes = new ArrayList<>();
     private int checked;
 
     static void verifyGuard() throws ReflectiveOperationException {
@@ -26,7 +28,14 @@ final class LayoutAudit {
             if (expected.getMessage().contains("not vertically centered")) {
                 check(new Button(bad.action(), bad.enabled(), bad.background(), bad.hover(), bad.pressed(), bad.border(),
                         1, 0, 4, 1, 100, 22, com.wf.wflib.ui.widget.Point.CENTER, label));
-                return;
+                var overlap = com.wf.wflib.ui.Ui.stack(bad,
+                        com.wf.wflib.ui.Ui.at("5", "0", bad));
+                try { check(overlap); }
+                catch (IllegalStateException detected) {
+                    if (detected.getMessage().contains("Overlapping buttons")) return;
+                    throw detected;
+                }
+                throw new IllegalStateException("Layout guard failed to detect overlapping buttons");
             }
             throw expected;
         }
@@ -44,6 +53,13 @@ final class LayoutAudit {
         try { layout.render(canvas, 0, 0, 384, 222, 0); }
         finally { canvas.popClip(); canvas.end(); }
         if (audit.checked == 0) throw new IllegalStateException("Layout audit checked no button labels");
+        for (int i = 0; i < audit.boxes.size(); i++) for (int j = i + 1; j < audit.boxes.size(); j++) {
+            var a = audit.boxes.get(i);
+            var b = audit.boxes.get(j);
+            if (Math.abs(a.y - b.y) < 0.05f && Math.abs(a.height - b.height) < 0.05f
+                    && Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x) > 0.05f)
+                audit.errors.add("Overlapping buttons in row: " + a.label + " / " + b.label);
+        }
         if (!audit.errors.isEmpty()) throw new IllegalStateException(String.join("; ", audit.errors));
         return audit.checked;
     }
@@ -101,6 +117,9 @@ final class LayoutAudit {
                 public void measure(UiEval ev) { node.measure(ev); width = node.width(); height = node.height(); }
                 public void draw(UiEval ev, float x, float y, float w, float h) {
                     box[0] = x; box[1] = y; box[2] = width; box[3] = height;
+                    boxes.add(new Box(x, y, width, height, String.valueOf(button.child())));
+                    if (x < -0.05f || x + width > 384.05f)
+                        errors.add("Button extends outside PDA width: " + button.child());
                     node.draw(ev, x, y, w, h);
                 }
             };

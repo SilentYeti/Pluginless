@@ -18,6 +18,7 @@ import static com.silentyeti.pluginless.pda.PdaWidgets.button;
 import static com.silentyeti.pluginless.pda.PdaWidgets.card;
 import static com.silentyeti.pluginless.pda.PdaWidgets.chip;
 import static com.wf.wflib.ui.Ui.list;
+import static com.wf.wflib.ui.Ui.row;
 import static com.wf.wflib.ui.Ui.stack;
 import static com.wf.wflib.ui.Ui.text;
 import static com.wf.wflib.ui.Ui.when;
@@ -156,6 +157,12 @@ final class MarketClientPage implements PdaClientPage {
         return array("chart").isEmpty() ? "" : money(best);
     }
 
+    private static WidgetDef tradeButton(String label, String enabled, Runnable run) {
+        return new com.wf.wflib.ui.widget.Button(item -> run.run(), enabled, PdaShell.PANEL, PdaShell.HOVER,
+                PdaShell.PRESS, PdaShell.EDGE, 1, 0, 2, 1, 0, 13,
+                com.wf.wflib.ui.widget.Point.LEFT, text(label, PdaShell.TEXT));
+    }
+
     public WidgetDef build() {
         UiAction pickItem = item -> { query(((Item) item).id()); };
         UiAction pickOrder = item -> selectedOrder = ((Order) item).id();
@@ -184,19 +191,20 @@ final class MarketClientPage implements PdaClientPage {
         tree.add(at(146, 124, button("-", () -> { quantity = Math.max(1, quantity - 1); query(asset()); })));
         tree.add(at(162, 127, text("{pda_pl_mkt.qty}", PdaShell.ACCENT)));
         tree.add(at(196, 124, button("+", () -> { quantity++; query(asset()); })));
-        float x = 214;
+        var chips = new ArrayList<WidgetDef>();
         String[] labels = {"1", "8", "64", "1K"};
         for (int i = 0; i < QUANTITIES.length; i++) {
             long value = QUANTITIES[i];
-            tree.add(at(x, 124, chip(labels[i], "pda_pl_mkt.q" + i, () -> { quantity = value; query(asset()); })));
-            x += 10 + labels[i].length() * 4.3f;
+            chips.add(chip(labels[i], "pda_pl_mkt.q" + i, () -> { quantity = value; query(asset()); }));
         }
-        tree.add(at(x + 8, 127, text("{pda_pl_mkt.fee}", PdaShell.DIM)));
+        tree.add(at(214, 124, row(2, chips.toArray(WidgetDef[]::new))));
+        tree.add(at(300, 127, text("{pda_pl_mkt.fee}", PdaShell.DIM)));
         tree.addAll(BAR.widgets(146, 140));
-        tree.add(at(146, 158, button("BUY NOW", "pda_pl_mkt.can_ibuy", () -> trade("instabuy", false))));
-        tree.add(at(188, 158, button("SELL NOW", "pda_pl_mkt.can_isell", () -> trade("instasell", false))));
-        tree.add(at(234, 158, button("BUY ORDER", "pda_pl_mkt.can_buy", () -> trade("buy", true))));
-        tree.add(at(285, 158, button("SELL ORDER", "pda_pl_mkt.can_sell", () -> trade("sell", true))));
+        tree.add(at(146, 158, row(2,
+                tradeButton("BUY NOW", "pda_pl_mkt.can_ibuy", () -> trade("instabuy", false)),
+                tradeButton("SELL NOW", "pda_pl_mkt.can_isell", () -> trade("instasell", false)),
+                tradeButton("BUY ORDER", "pda_pl_mkt.can_buy", () -> trade("buy", true)),
+                tradeButton("SELL ORDER", "pda_pl_mkt.can_sell", () -> trade("sell", true)))));
         tree.add(at(146, 175, text("{pda_pl_mkt.quote}", PdaShell.TEXT)));
         tree.add(at(146, 186, text("{pda_pl_mkt.held}", PdaShell.DIM)));
         return stack(tree.toArray(WidgetDef[]::new));

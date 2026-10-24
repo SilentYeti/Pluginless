@@ -18,6 +18,7 @@ import static com.silentyeti.pluginless.pda.PdaWidgets.button;
 import static com.silentyeti.pluginless.pda.PdaWidgets.chip;
 import static com.wf.wflib.ui.Ui.bar;
 import static com.wf.wflib.ui.Ui.list;
+import static com.wf.wflib.ui.Ui.row;
 import static com.wf.wflib.ui.Ui.stack;
 import static com.wf.wflib.ui.Ui.text;
 import static com.wf.wflib.ui.Ui.when;
@@ -226,10 +227,11 @@ final class StocksClientPage implements PdaClientPage {
         UiAction pick = item -> PdaClientSetup.send("stocks", "select", ((Stock) item).ticker());
         UiAction pickPosition = item -> selectedPosition = ((Position) item).ticker();
         var tree = new ArrayList<WidgetDef>();
-        tree.add(at(8, 4, chip("MARKET", "pda_pl_stk.tab_market", () -> tab = 0)));
-        tree.add(at(50, 4, chip("MARGIN", "pda_pl_stk.tab_margin", () -> tab = 1)));
-        tree.add(at(92, 4, chip("SHORTS", "pda_pl_stk.tab_shorts", () -> tab = 2)));
-        tree.add(at(140, 4, chip("SHARES", "pda_pl_stk.tab_shares", () -> tab = 3)));
+        tree.add(at(8, 4, row(2,
+                chip("MARKET", "pda_pl_stk.tab_market", () -> tab = 0),
+                chip("MARGIN", "pda_pl_stk.tab_margin", () -> tab = 1),
+                chip("SHORTS", "pda_pl_stk.tab_shorts", () -> tab = 2),
+                chip("SHARES", "pda_pl_stk.tab_shares", () -> tab = 3))));
         tree.add(at(250, 7, text("{pda_pl_stk.portfolio}", PdaShell.DIM)));
 
         tree.add(when("pda_pl_stk.tab_market", stack(
@@ -240,8 +242,9 @@ final class StocksClientPage implements PdaClientPage {
                 at(166, 80, text("{pda_pl_stk.quote}", PdaShell.TEXT)),
                 at(166, 92, text("{pda_pl_stk.held}", PdaShell.DIM)),
                 stack(COUNT.widgets(166, 110).toArray(WidgetDef[]::new)),
-                at(166, 128, button("BUY", "pda_pl_stk.can_buy", () -> PdaClientSetup.send("stocks", "buy", ticker(), Long.toString(COUNT.count)))),
-                at(194, 128, button("SELL", "pda_pl_stk.can_sell", () -> PdaClientSetup.send("stocks", "sell", ticker(), Long.toString(COUNT.count)))))));
+                at(166, 128, row(2,
+                        button("BUY", "pda_pl_stk.can_buy", () -> PdaClientSetup.send("stocks", "buy", ticker(), Long.toString(COUNT.count))),
+                        button("SELL", "pda_pl_stk.can_sell", () -> PdaClientSetup.send("stocks", "sell", ticker(), Long.toString(COUNT.count))))))));
 
         tree.add(when("pda_pl_stk.tab_margin", stack(
                 at(8, 24, text("{pda_pl_stk.m_summary}", PdaShell.TEXT)),

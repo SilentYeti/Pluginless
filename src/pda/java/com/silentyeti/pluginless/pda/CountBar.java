@@ -12,6 +12,7 @@ import static com.silentyeti.pluginless.pda.PdaWidgets.at;
 import static com.silentyeti.pluginless.pda.PdaWidgets.button;
 import static com.silentyeti.pluginless.pda.PdaWidgets.chip;
 import static com.wf.wflib.ui.Ui.text;
+import static com.wf.wflib.ui.Ui.row;
 
 /** A whole-number quantity (shares, items): {@code -} count {@code +} and preset chips that set it. */
 final class CountBar {
@@ -44,13 +45,13 @@ final class CountBar {
         tree.add(at(left, y, button("-", () -> set(count - 1))));
         tree.add(at(left + 16, y + 3, text("{" + subject + ".count}", PdaShell.ACCENT)));
         tree.add(at(left + 52, y, button("+", () -> set(count + 1))));
-        float x = left + 70;
+        var controls = new ArrayList<WidgetDef>();
         for (int i = 0; i < presets.length; i++) {
             long value = presets[i];
             String label = value >= 1000 ? value / 1000 + "K" : Long.toString(value);
-            tree.add(at(x, y, chip(label, subject + ".preset" + i, () -> set(value))));
-            x += 10 + label.length() * 4.3f;
+            controls.add(chip(label, subject + ".preset" + i, () -> set(value)));
         }
+        tree.add(at(left + 70, y, row(2, controls.toArray(WidgetDef[]::new))));
         return tree;
     }
 }

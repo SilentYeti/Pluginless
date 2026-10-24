@@ -15,6 +15,7 @@ import static com.silentyeti.pluginless.pda.PdaWidgets.at;
 import static com.silentyeti.pluginless.pda.PdaWidgets.button;
 import static com.silentyeti.pluginless.pda.PdaWidgets.chip;
 import static com.wf.wflib.ui.Ui.text;
+import static com.wf.wflib.ui.Ui.row;
 
 /**
  * The money amount a page works with: {@code -} amount {@code +}, step chips, shortcut buttons (BAL, MIN...) and TYPE.
@@ -61,19 +62,16 @@ final class AmountBar {
         tree.add(at(left, y, button("-", () -> adjust(-1))));
         tree.add(at(left + 18, y + 3, text("{" + subject + ".amount}", PdaShell.ACCENT)));
         tree.add(at(left + 64, y, button("+", () -> adjust(1))));
-        float x = left + 84;
+        var controls = new ArrayList<WidgetDef>();
         for (int i = 0; i < steps.length; i++) {
             long value = steps[i];
             String label = value < 100 ? value + "C" : value >= 100_000 ? "$" + value / 100_000 + "K" : "$" + value / 100;
-            tree.add(at(x, y, chip(label, subject + ".step" + i, () -> step = value)));
-            x += 10 + label.length() * 4.3f;
+            controls.add(chip(label, subject + ".step" + i, () -> step = value));
         }
-        x += 2;
-        for (var shortcut : shortcuts) {
-            tree.add(at(x, y, button(shortcut.label(), () -> amount = Math.max(0, shortcut.value().getAsLong()))));
-            x += shortcut.width();
-        }
-        tree.add(at(x, y, button("TYPE", this::type)));
+        for (var shortcut : shortcuts)
+            controls.add(button(shortcut.label(), () -> amount = Math.max(0, shortcut.value().getAsLong())));
+        controls.add(button("TYPE", this::type));
+        tree.add(at(left + 84, y, row(2, controls.toArray(WidgetDef[]::new))));
         return tree;
     }
 }

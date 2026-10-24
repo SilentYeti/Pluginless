@@ -19,6 +19,7 @@ import static com.silentyeti.pluginless.pda.PdaWidgets.button;
 import static com.silentyeti.pluginless.pda.PdaWidgets.card;
 import static com.silentyeti.pluginless.pda.PdaWidgets.chip;
 import static com.wf.wflib.ui.Ui.list;
+import static com.wf.wflib.ui.Ui.row;
 import static com.wf.wflib.ui.Ui.repeat;
 import static com.wf.wflib.ui.Ui.stack;
 import static com.wf.wflib.ui.Ui.text;
@@ -173,20 +174,22 @@ final class AuctionClientPage implements PdaClientPage {
         };
         UiAction pickSlot = item -> slot = ((Slot) item).index();
         var tree = new ArrayList<WidgetDef>();
-        tree.add(at(8, 4, chip("BROWSE", "pda_pl_auc.tab_browse", () -> { tab = 0; selected = 0; query(); })));
-        tree.add(at(52, 4, chip("{pda_pl_auc.mine_label}", "pda_pl_auc.tab_mine", () -> { tab = 1; selected = 0; query(); })));
-        tree.add(at(96, 4, chip("SELL", "pda_pl_auc.tab_sell", () -> { tab = 2; query(); })));
+        tree.add(at(8, 4, row(2,
+                chip("BROWSE", "pda_pl_auc.tab_browse", () -> { tab = 0; selected = 0; query(); }),
+                chip("{pda_pl_auc.mine_label}", "pda_pl_auc.tab_mine", () -> { tab = 1; selected = 0; query(); }),
+                chip("SELL", "pda_pl_auc.tab_sell", () -> { tab = 2; query(); }))));
         tree.add(at(300, 4, button("{pda_pl_auc.boxed}", "pda_pl_auc.has_boxed", () -> PdaClientSetup.send("auction", "collect"))));
 
         // BROWSE / MINE: filters, list, pager, detail
         tree.add(when("pda_pl_auc.tab_list", stack(
                 when("pda_pl_auc.tab_browse", stack(
                         at(8, 20, repeat("pda_pl_auc.cats", false, 2, PdaWidgets.row("{pda_pl_auc_cat.label}", 40, "pda_pl_auc_cat.selected", pickCategory))),
-                        at(8, 33, chip("NEW", "pda_pl_auc.sort_new", () -> { sort = ""; query(); })),
-                        at(34, 33, chip("PRICE+", "pda_pl_auc.sort_price", () -> { sort = "price"; query(); })),
-                        at(70, 33, chip("PRICE-", "pda_pl_auc.sort_expensive", () -> { sort = "expensive"; query(); })),
-                        at(106, 33, chip("OLD", "pda_pl_auc.sort_oldest", () -> { sort = "oldest"; query(); })),
-                        at(134, 33, button("{pda_pl_auc.search}", () -> PdaWidgets.prompt("Search", search, typed -> { search = typed.trim(); pageNumber = 0; query(); }))))),
+                        at(8, 33, row(2,
+                                chip("NEW", "pda_pl_auc.sort_new", () -> { sort = ""; query(); }),
+                                chip("PRICE+", "pda_pl_auc.sort_price", () -> { sort = "price"; query(); }),
+                                chip("PRICE-", "pda_pl_auc.sort_expensive", () -> { sort = "expensive"; query(); }),
+                                chip("OLD", "pda_pl_auc.sort_oldest", () -> { sort = "oldest"; query(); }),
+                                button("{pda_pl_auc.search}", () -> PdaWidgets.prompt("Search", search, typed -> { search = typed.trim(); pageNumber = 0; query(); })))))),
                 at(8, 49, list("pda_pl_auc.rows", 11, 1, "226", "92", PdaShell.EDGE,
                         PdaWidgets.row("{pda_pl_auc_row.label}", 214, "pda_pl_auc_row.selected", pickRow))),
                 when("pda_pl_auc.no_rows", at(12, 54, text("NOTHING LISTED", PdaShell.DIM))),
@@ -201,17 +204,19 @@ final class AuctionClientPage implements PdaClientPage {
                         at(247, 56, text("{pda_pl_auc.sel_price}", PdaShell.TEXT)),
                         at(247, 66, text("{pda_pl_auc.sel_next}", PdaShell.DIM)),
                         at(247, 76, text("{pda_pl_auc.sel_time}", PdaShell.DIM)),
-                        at(247, 92, button("BUY", "pda_pl_auc.can_buy", () -> PdaClientSetup.send("auction", "buy", Long.toString(selected)))),
-                        at(272, 92, button("BID", "pda_pl_auc.can_bid", () -> PdaClientSetup.send("auction", "bid", Long.toString(selected), Long.toString(BAR.amount)))),
-                        at(297, 92, button("CANCEL", "pda_pl_auc.can_cancel", () -> PdaClientSetup.send("auction", "cancel", Long.toString(selected)))),
-                        at(247, 108, button("WATCH", "pda_pl_auc.can_watch", () -> {
-                            var chosen = current();
-                            if (chosen != null) PdaClientSetup.send("auction", "watch", PdaClientState.text(chosen, "item"));
-                        })),
-                        at(284, 108, button("UNWATCH", "pda_pl_auc.can_watch", () -> {
-                            var chosen = current();
-                            if (chosen != null) PdaClientSetup.send("auction", "unwatch", PdaClientState.text(chosen, "item"));
-                        })))),
+                        at(247, 92, row(2,
+                                button("BUY", "pda_pl_auc.can_buy", () -> PdaClientSetup.send("auction", "buy", Long.toString(selected))),
+                                button("BID", "pda_pl_auc.can_bid", () -> PdaClientSetup.send("auction", "bid", Long.toString(selected), Long.toString(BAR.amount))),
+                                button("CANCEL", "pda_pl_auc.can_cancel", () -> PdaClientSetup.send("auction", "cancel", Long.toString(selected))))),
+                        at(247, 108, row(2,
+                                button("WATCH", "pda_pl_auc.can_watch", () -> {
+                                    var chosen = current();
+                                    if (chosen != null) PdaClientSetup.send("auction", "watch", PdaClientState.text(chosen, "item"));
+                                }),
+                                button("UNWATCH", "pda_pl_auc.can_watch", () -> {
+                                    var chosen = current();
+                                    if (chosen != null) PdaClientSetup.send("auction", "unwatch", PdaClientState.text(chosen, "item"));
+                                }))))),
                 when("pda_pl_auc.has_sel", stack(), at(247, 40, text("PICK A LISTING", PdaShell.DIM))))));
 
         // SELL: inventory, mode, fee

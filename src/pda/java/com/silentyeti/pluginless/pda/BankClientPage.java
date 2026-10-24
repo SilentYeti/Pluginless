@@ -19,6 +19,7 @@ import static com.silentyeti.pluginless.pda.PdaWidgets.card;
 import static com.silentyeti.pluginless.pda.PdaWidgets.chip;
 import static com.wf.wflib.ui.Ui.list;
 import static com.wf.wflib.ui.Ui.row;
+import static com.wf.wflib.ui.Ui.row;
 import static com.wf.wflib.ui.Ui.stack;
 import static com.wf.wflib.ui.Ui.text;
 import static com.wf.wflib.ui.Ui.when;
@@ -141,8 +142,9 @@ final class BankClientPage implements PdaClientPage {
         tree.add(at(250, 54, button("REPAY", "pda_pl_bank.can_repay", () -> PdaClientSetup.send("bank", "repay", Long.toString(BAR.amount)))));
 
         tree.add(card(196, 74, 180, 112, ""));
-        tree.add(at(201, 78, chip("HISTORY", "pda_pl_bank.tab_history", () -> requestsTab = false)));
-        tree.add(at(246, 78, chip("{pda_pl_bank.requests_label}", "pda_pl_bank.tab_requests", () -> requestsTab = true)));
+        tree.add(at(201, 78, row(2,
+                chip("HISTORY", "pda_pl_bank.tab_history", () -> requestsTab = false),
+                chip("{pda_pl_bank.requests_label}", "pda_pl_bank.tab_requests", () -> requestsTab = true))));
         tree.add(when("pda_pl_bank.tab_history", stack(
                 at(201, 95, list("pda_pl_bank.history", 11, 1, "170", "88", PdaShell.EDGE, row(5,
                         text("{pda_pl_bank_tx.clock}", PdaShell.DIM),
