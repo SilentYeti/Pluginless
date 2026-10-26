@@ -70,4 +70,97 @@ class ClaimGroupsTest {
     void opacAdapterFailsLoudlyOnAnUnexpectedApi() {
         assertThrows(ReflectiveOperationException.class, () -> OpacClaimGroups.read(new Object()));
     }
+
+    // Same method names and shapes as FTB Teams 2101.1.11 and FTB Chunks 2101.1.22 (checked against the published jars).
+    public interface TeamsApi { boolean isManagerLoaded(); Object getManager(); }
+    public interface TeamManager { Collection<Object> getTeams(); }
+    public interface Team { UUID getId(); String getShortName(); UUID getOwner(); Set<UUID> getMembers(); boolean isPartyTeam(); boolean isServerTeam(); }
+    public interface ChunksApi { boolean isManagerLoaded(); Object getManager(); }
+    public interface ChunkManager { Map<UUID, Collection<Object>> getClaimedChunksByTeam(java.util.function.Predicate<Object> filter); }
+
+    private record T(UUID getId, String getShortName, UUID getOwner, Set<UUID> getMembers, boolean isPartyTeam, boolean isServerTeam) implements Team {}
+
+    private static TeamsApi teams(boolean loaded, Object... teams) {
+        return new TeamsApi() {
+            public boolean isManagerLoaded() { return loaded; }
+            public Object getManager() { return (TeamManager) () -> List.of(teams); }
+        };
+    }
+
+    private static ChunksApi chunks(Map<UUID, Collection<Object>> byTeam) {
+        return new ChunksApi() {
+            public boolean isManagerLoaded() { return true; }
+            public Object getManager() { return (ChunkManager) filter -> { byTeam.values().forEach(c -> c.forEach(filter::test)); return byTeam; }; }
+        };
+    }
+
+    @Test
+    void ftbAdapterReadsPartiesAndCountsChunksPerTeam() throws Exception {
+        var party = UUID.randomUUID();
+        var server = UUID.randomUUID();
+        var solo = UUID.randomUUID();
+        var teams = teams(true,
+                new T(party, "Reds", A, Set.of(A, B), true, false),
+                new T(server, "Spawn", A, Set.of(), false, true),
+                new T(solo, "C", C, Set.of(C), false, false));
+        var groups = FtbClaimGroups.read(teams, chunks(Map.of(party, List.of(new Object(), new Object(), new Object()), solo, List.of(new Object()))));
+        assertEquals(2, groups.size());
+        assertEquals(new ClaimGroups.Group(party.toString(), "Reds", A, Set.of(A, B), 3), groups.get(0));
+        assertEquals(0, groups.get(1).chunks());
+        assertEquals("Spawn", groups.get(1).name());
+    }
+
+    @Test
+    void ftbAdapterReportsNothingBeforeItsManagersAreLoaded() throws Exception {
+        assertTrue(FtbClaimGroups.read(teams(false), chunks(Map.of())).isEmpty());
+    }
+
+    @Test
+    void ftbAdapterFailsLoudlyOnAnUnexpectedApi() {
+        assertThrows(ReflectiveOperationException.class, () -> FtbClaimGroups.read(new Object(), new Object()));
+    }
+
+    // Plain data classes shaped like WarForge's Faction and FactionStorage (public fields, same names).
+    public static class Faction {
+        public UUID uuid;
+        public String name;
+        public Map<UUID, Object> members = new java.util.LinkedHashMap<>();
+        public Map<Object, Integer> claims = new java.util.HashMap<>();
+        UUID leader;
+        public UUID getLeaderId() { return leader; }
+        Faction(UUID uuid, String name, UUID leader, List<UUID> members, int claims) {
+            this.uuid = uuid; this.name = name; this.leader = leader;
+            members.forEach(id -> this.members.put(id, new Object()));
+            for (int i = 0; i < claims; i++) this.claims.put(i, 0);
+        }
+    }
+    public static class Storage {
+        private final List<Faction> all;
+        Storage(Faction... all) { this.all = List.of(all); }
+        public Collection<Faction> getAllFactions() { return all; }
+    }
+
+    @Test
+    void warForgeAdapterReadsFactionsAndSkipsTheNeutralZones() throws Exception {
+        var red = UUID.randomUUID();
+        var safe = UUID.randomUUID();
+        var storage = new Storage(new Faction(red, "Reds", A, List.of(A, B), 5), new Faction(safe, "SafeZone", null, List.of(), 40),
+                new Faction(new UUID(0, 0), "null", null, List.of(), 1));
+        var groups = WarForgeClaimGroups.read(storage, safe::equals);
+        assertEquals(List.of(new ClaimGroups.Group(red.toString(), "Reds", A, Set.of(A, B), 5)), groups);
+    }
+
+    @Test
+    void warForgeAdapterFailsLoudlyOnAnUnexpectedLayout() {
+        assertThrows(ReflectiveOperationException.class, () -> WarForgeClaimGroups.read(new Object(), id -> false));
+    }
+
+    @Test
+    void theClaimModIsChosenWarForgeThenFtbThenOpac() {
+        assertNull(ClaimCompat.select(id -> false));
+        assertEquals(ClaimCompat.Mod.OPAC, ClaimCompat.select(Set.of("openpartiesandclaims")::contains));
+        assertEquals(ClaimCompat.Mod.FTB, ClaimCompat.select(Set.of("ftbchunks", "ftbteams", "openpartiesandclaims")::contains));
+        assertNull(ClaimCompat.select(Set.of("ftbchunks")::contains));
+        assertEquals(ClaimCompat.Mod.WARFORGE, ClaimCompat.select(Set.of("warforge", "ftbchunks", "ftbteams", "openpartiesandclaims")::contains));
+    }
 }

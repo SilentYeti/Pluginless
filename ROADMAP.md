@@ -39,6 +39,7 @@ Items marked **Decide** are open questions; they are collected again at the bott
 - [ ] Auction house: buy orders
 - [ ] Borrowing to invest and short selling on company shares (both are done for admin stocks)
 - [x] Faction compat, groundwork: `ClaimGroups` interface and an Open Parties and Claims adapter (read-only)
+- [x] Faction compat: WarForge and FTB Chunks (with FTB Teams) adapters (read-only, reflection, one active adapter chosen WarForge, then FTB, then Open Parties and Claims). Flan is decision #17, default no
 - [ ] Faction compat: WarForge (1.21.1 only) and FTB Chunks adapters, chunk tax and faction treasury
 - [ ] Court system
 - [ ] ROTH terminal: a crafting recipe for the item (the home screen already links every built module)

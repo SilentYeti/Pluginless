@@ -31,7 +31,7 @@ Early. The foundation is in place and the modules are built on top of it one at 
 | Short selling | Done for admin stocks; company shares planned |
 | Court system | Planned |
 | Homes, spawn, warps, teleport requests, random teleport, back and cosmetics | Working |
-| Faction compat: claim-group interface and an Open Parties and Claims adapter (read-only: parties, members, chunk counts; optional, off without the mod) | Working |
+| Faction compat: claim-group interface with read-only adapters for WarForge (factions), FTB Chunks with FTB Teams (party and server teams) and Open Parties and Claims (parties); optional, off without the mod. If several are installed, WarForge wins, then FTB, then Open Parties and Claims | Working (unit-tested against fakes of each API; not yet run against the real mods) |
 | Faction compat: WarForge Remaintained (1.21.1 only), FTB Chunks, chunk tax, faction treasury | Planned, no code yet |
 
 ## Commands
