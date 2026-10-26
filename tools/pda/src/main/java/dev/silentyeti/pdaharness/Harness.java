@@ -63,6 +63,22 @@ public final class Harness {
         player.setXRot(0);
         player.getInventory().selected = 0;
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.PDA.get()));
+        if (Boolean.getBoolean("pda.harness.longText")) {
+            String company = "WWWW_MMMM_WWWW_MMMM_WWWW"; // Legal maximum: 24 characters.
+            String home = "WWWW_MMMM_WWWW_MMMM_WWWW_MMMM_WW"; // Legal maximum: 32.
+            var source = player.createCommandSourceStack().withPermission(4);
+            for (String command : new String[]{"company create " + company,
+                    "company describe " + company + " " + "Wide company description with WWWW MMMM and a complete final sentence that must survive template substitution.",
+                    "sethome " + home}) {
+                try {
+                    if (player.server.getCommands().getDispatcher().execute(command, source) <= 0)
+                        throw new IllegalStateException("Long-text seed failed: " + command);
+                } catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
+                    throw new IllegalStateException("Long-text seed syntax failed: " + command, e);
+                }
+            }
+            write("long-text-seed.json", Map.of("company", company, "home", home));
+        }
         write("player-ready.json", Map.of("name", "PdaTester", "balanceCents", 25_000_00L));
     }
 }

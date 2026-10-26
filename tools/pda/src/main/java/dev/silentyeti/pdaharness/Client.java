@@ -34,6 +34,28 @@ public final class Client {
             Files.delete(action);
             id = command.get("id").getAsInt();
             switch (command.get("op").getAsString()) {
+                case "audit_text" -> {
+                    if (!PdaClient.focused() || PdaClient.app() == null)
+                        throw new IllegalStateException("Text audit requires a focused PDA app");
+                    var state = Class.forName("com.silentyeti.pluginless.pda.PdaClientState", true,
+                            PdaClient.app().getClass().getClassLoader());
+                    String page = (String) state.getMethod("page").invoke(null);
+                    var view = (JsonObject) state.getMethod("view", String.class).invoke(null, page);
+                    TextAudit.verifyGuard();
+                    var report = new java.util.HashMap<String, Object>(TextAudit.check(PdaClient.app().build(), view));
+                    if (command.has("requires")) {
+                        var errors = new java.util.ArrayList<Object>((java.util.Collection<?>) report.get("errors"));
+                        for (var required : command.getAsJsonArray("requires")) {
+                            String expected = required.getAsString();
+                            boolean found = ((java.util.List<?>) report.get("labels")).stream().anyMatch(label ->
+                                    String.valueOf(((Map<?, ?>) label).get("source")).contains(expected));
+                            if (!found) errors.add("Required source text was not audited: " + expected);
+                        }
+                        report.put("errors", errors);
+                    }
+                    Harness.write("result-" + id + ".json", Map.of("ok", true, "page", page, "text_audit", report));
+                    return;
+                }
                 case "assert_layout" -> {
                     if (!PdaClient.focused() || PdaClient.app() == null)
                         throw new IllegalStateException("Layout audit requires a focused PDA app");

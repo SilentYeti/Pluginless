@@ -17,6 +17,8 @@ neoForge {
             }
             gameDirectory = file(project.property('gameDir'))
             systemProperty 'pda.harness.control', project.property('controlDir')
+            systemProperty 'pda.harness.longText', project.findProperty('longText') ?: 'false'
+            systemProperty 'pluginless.pda.textaudit', 'true'
         }
     }
     mods { pdaharness { sourceSet sourceSets.main } }

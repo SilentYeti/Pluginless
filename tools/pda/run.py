@@ -47,6 +47,8 @@ def main():
     parser.add_argument('--wflib', type=Path, default=ROOT.parent / 'WFLib-main')
     parser.add_argument('--apps', nargs='*', default=['wflib:terminal'], help='PDA IDs to open; missing/invisible apps fail')
     parser.add_argument('--ranks', type=Path, help='ranks.json to start the server with (default: the mod\'s own)')
+    parser.add_argument('--stocks', type=Path, help='stocks.json fixture for the disposable server')
+    parser.add_argument('--long-text', action='store_true', help='Seed legal long company/home names for text audits')
     parser.add_argument('--script', type=Path, action='append', default=[], help='JSON action array; repeat to run page scenarios in one instance')
     parser.add_argument('--skip-build', action='store_true', help='Use existing jars; manifest still records exact bytes')
     parser.add_argument('--show', action='store_true', help='Open on the desktop and keep running until Minecraft quits')
@@ -71,7 +73,7 @@ def main():
         for project, task in ((wflib, 'jar'), (ROOT, ':1.21.1:jar')):
             if project == ROOT and args.pluginless_jar:
                 continue
-            subprocess.run(['sh', str(project / 'gradlew'), task, '--console=plain'], cwd=project, env=env, check=True)
+            subprocess.run(['sh', str(project / 'gradlew'), task, '--console=plain', '--no-daemon'], cwd=project, env=env, check=True)
     jars = {
         'pluginlessJar': args.pluginless_jar.resolve() if args.pluginless_jar else ROOT / 'versions/1.21.1/build/libs/pluginless-0.1.0+1.21.1.jar',
         'wflibJar': wflib / 'build/libs/wflib-1.8.36.jar',
@@ -122,6 +124,9 @@ def main():
             if args.ranks:
                 (game / 'config' / 'pluginless').mkdir(parents=True)
                 shutil.copy2(args.ranks, game / 'config' / 'pluginless' / 'ranks.json')
+            if args.stocks:
+                (game / 'config' / 'pluginless').mkdir(parents=True, exist_ok=True)
+                shutil.copy2(args.stocks, game / 'config' / 'pluginless' / 'stocks.json')
             flat = json.dumps({'layers': [{'block': 'minecraft:bedrock', 'height': 1}, {'block': 'minecraft:dirt', 'height': 2}, {'block': 'minecraft:grass_block', 'height': 1}], 'biome': 'minecraft:plains', 'lakes': False, 'features': False})
             (game / 'server.properties').write_text(f'generator-settings={flat}\nonline-mode=false\nserver-ip=127.0.0.1\nserver-port={port}\nlevel-seed=160016\nlevel-type=minecraft:flat\nspawn-protection=0\nview-distance=3\nsimulation-distance=3\nmax-tick-time=-1\n')
         else:
@@ -130,7 +135,8 @@ def main():
                 options += 'soundCategory_master:0.0\n'
             (game / 'options.txt').write_text(options)
         command = ['sh', str(ROOT / 'gradlew'), '-p', str(project), 'runHarness', '--console=plain', '--no-daemon',
-                   f'-Pmode={mode}', f'-PgameDir={game}', f'-PcontrolDir={control}', f'-Pport={port}']
+                   f'-Pmode={mode}', f'-PgameDir={game}', f'-PcontrolDir={control}', f'-Pport={port}',
+                   f'-PlongText={str(args.long_text).lower()}']
         command += [f'-P{name}={path}' for name, path in jars.items()]
         return spawn(command, project, mode + '.log')
 
@@ -180,7 +186,12 @@ def main():
                         raise ValueError('Screenshot name must contain only letters, digits, - or _')
                     shutil.copy2(image, output / (name + '.png'))
                 receipts.append(dict(step=step, result=receipt))
-        (output / 'result.json').write_text(json.dumps({'passed': True, 'seed': seed, 'checks': receipts}, indent=2))
+        text_errors = [dict(page=r['result'].get('page'), error=e)
+                       for r in receipts for e in r['result'].get('text_audit', {}).get('errors', [])]
+        (output / 'result.json').write_text(json.dumps({'passed': not text_errors, 'seed': seed,
+                                                      'checks': receipts, 'text_errors': text_errors}, indent=2))
+        if text_errors:
+            raise RuntimeError(f'{len(text_errors)} text audit failures; all pages inspected, see {output / "result.json"}')
         print(f'PASS: focused PDA and {len(args.apps)} apps; screenshots in {output}', flush=True)
         if args.show:
             print('Desktop PDA instance ready. Stop: close the Minecraft window (or press Ctrl+C in the runner terminal); the test server stops too.', flush=True)

@@ -52,6 +52,19 @@ python3 tools/pda/run.py --apps pluginless:pluginless \
 
 `assert_layout` measures and draws the current app tree with the loaded game font into an empty clip. It checks nonempty button contents for border containment, direct text labels for vertical centering, equal-height buttons on the same row for overlapping rectangles, and buttons extending beyond the PDA width, including disabled controls. Deliberately misaligned and overlapping controls must fail before the real layout may pass. This checks the current visible state; it does not prove every possible translation, resource-pack font, inventory or server-configured string fits. The fixture grants cosmetics to the test rank only; production players still need their configured perks/grants, while operators can use valid cosmetics. `assert_page` accepts optional `values` for exact server-snapshot assertions; `assert_inventory` checks an item count and optional `own_profile` on delivered skulls.
 
+`audit_text` compares raw text signal getters with their declared capacities, source snapshot strings with the old character-shortening convention, and WFLib Text buffers with the template values. For fitted Pluginless text it reads `PdaTextAudit` diagnostics, measures displayed lines with the loaded font, and moves the cursor over each clipped label to check that its tooltip actually contains the complete source. Marked overflow and full tooltip lines are retained in the report. These audits collect failures across the scenario: the runner writes `result.json` with `passed: false` and exits unsuccessfully after visiting all pages. An action receipt's `ok: true` only means the audit executed; inspect its `text_audit.errors` or the aggregate `text_errors`. Opaque custom charts are not inspected.
+
+Run the long-text audit against a built combined jar:
+
+```sh
+python3 tools/pda/run.py --skip-build --apps pluginless:pluginless \
+  --ranks tools/pda/fixtures/cosmetics.json \
+  --stocks tools/pda/fixtures/long-text-stocks.json --long-text \
+  --script tools/pda/scenarios/text-audit.json
+```
+
+The fixtures include the original YETI description, a 629-character stock description, a 24-character company name, and a 32-character home name seeded through real server commands. `audit_text` accepts `requires`, an array of source substrings that must actually appear among inspected labels, to prevent a wrong selection from passing a long-text test. Use `--pluginless-jar` to test an isolated product branch. Every run snapshots its jars and records SHA-256 hashes. The scenario covers each main page, Stocks tabs, and Cosmetics tabs; it does not exhaust every data-dependent state or font. Serialize GUI runs with other workers.
+
 Tile coordinates match the foundation's four-column 86x40 grid with 8-unit gaps, at `(8,18)` below WFLib's and Pluginless's 18-unit bars. A layout change needs updated scenario coordinates. Page workers can append feature-specific steps to their scenario without changing the runner.
 
 To drive keys, typing, cursor movement and clicks in an app, append a JSON script:

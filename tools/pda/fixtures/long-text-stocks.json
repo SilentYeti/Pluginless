@@ -1,0 +1,17 @@
+{
+  "dailyPayoutCap": 100000,
+  "stocks": {
+    "YETI": {
+      "name": "Wide WWWW MMMM Industries with a complete name",
+      "description": "Swings hard and keeps going"
+    },
+    "GOLD": {
+      "name": "Gold Reserve",
+      "description": "Slow, and returns to its level"
+    },
+    "WWWWMMMM": {
+      "name": "Wide words WWWW MMMM repeat across this long company name",
+      "description": "WWWW MMMM measured text must preserve every word. WWWW MMMM measured text must preserve every word. WWWW MMMM measured text must preserve every word. WWWW MMMM measured text must preserve every word. WWWW MMMM measured text must preserve every word. WWWW MMMM measured text must preserve every word. WWWW MMMM measured text must preserve every word. WWWW MMMM measured text must preserve every word. WWWW MMMM measured text must preserve every word. WWWW MMMM measured text must preserve every word. WWWW MMMM measured text must preserve every word. WWWW MMMM measured text must preserve every word. END_OF_LONG_STOCK_DESCRIPTION"
+    }
+  }
+}
