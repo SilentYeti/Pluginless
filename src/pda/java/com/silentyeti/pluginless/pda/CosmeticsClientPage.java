@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import static com.wf.wflib.ui.Ui.*;
+import static com.silentyeti.pluginless.pda.PdaWidgets.text;
 
 /** Drafts are local previews; only a server snapshot or action result confirms a change. */
 final class CosmeticsClientPage implements PdaClientPage {
@@ -58,30 +59,30 @@ final class CosmeticsClientPage implements PdaClientPage {
 
     public void signals() {
         Signals.num(PlApp.APP, "cos_tab", app -> tab);
-        Signals.text(PlApp.APP, "cos_lock", 64, app -> {
+        Signals.text(PlApp.APP, "cos_lock", PdaWidgets.TEXT_MAX, app -> {
             if (tab == 4) return "SKULL: " + (allowed("skull") ? "unlocked" : "rank/grant required")
                     + " | HAT: " + (allowed("hat") ? "unlocked" : "rank/grant required");
             if (tab == 3) return "Titles unlock through your rank or an individual grant.";
             String perk = PERKS[tab];
             return allowed(perk) ? "Preview changes, then apply." : "LOCKED: requires rank perk or grant: " + perk;
         });
-        Signals.text(PlApp.APP, "cos_color", 40, app -> value("color", color).isEmpty() ? "RANK DEFAULT" : value("color", color));
-        Signals.text(PlApp.APP, "cos_from", 12, app -> from);
-        Signals.text(PlApp.APP, "cos_to", 12, app -> to);
-        Signals.text(PlApp.APP, "cos_nick", 64, app -> value("nick", nick).isEmpty() ? "USE REAL NAME" : value("nick", nick));
-        Signals.text(PlApp.APP, "cos_price", 40, app -> "GET MY SKULL  " + PdaClientState.money(view(), PdaClientState.number(view(), "skull_price")));
-        Signals.text(PlApp.APP, "cos_hat", 64, app -> selectedSlot < 0 ? "Choose an inventory slot to wear as a hat." :
+        Signals.text(PlApp.APP, "cos_color", PdaWidgets.TEXT_MAX, app -> value("color", color).isEmpty() ? "RANK DEFAULT" : value("color", color));
+        Signals.text(PlApp.APP, "cos_from", PdaWidgets.TEXT_MAX, app -> from);
+        Signals.text(PlApp.APP, "cos_to", PdaWidgets.TEXT_MAX, app -> to);
+        Signals.text(PlApp.APP, "cos_nick", PdaWidgets.TEXT_MAX, app -> value("nick", nick).isEmpty() ? "USE REAL NAME" : value("nick", nick));
+        Signals.text(PlApp.APP, "cos_price", PdaWidgets.TEXT_MAX, app -> "GET MY SKULL  " + PdaClientState.money(view(), PdaClientState.number(view(), "skull_price")));
+        Signals.text(PlApp.APP, "cos_hat", PdaWidgets.TEXT_MAX, app -> selectedSlot < 0 ? "Choose an inventory slot to wear as a hat." :
                 slots().stream().filter(s -> s.index == selectedSlot).map(s -> "Slot " + (s.index + 1) + ": " + s.name + " x" + s.count).findFirst().orElse("Choose a slot."));
         for (var perk : List.of("namecolor", "namegradient", "nick", "skull", "hat"))
             Signals.bool(PlApp.APP, "cos_" + perk + "_allowed", app -> allowed(perk));
         Signals.bool(PlApp.APP, "cos_wear", app -> allowed("hat") && view().has("head_empty") && view().get("head_empty").getAsBoolean()
                 && slots().stream().anyMatch(s -> s.index == selectedSlot && s.count > 0));
         Signals.bool(PlApp.APP, "cos_title_apply", app -> titles().stream().anyMatch(t -> t.key.equals(value("title", title)) && t.allowed));
-        Signals.text(PlApp.APP, "cos_title_selected", 40, app -> "SELECTED: " + titles().stream().filter(t -> t.key.equals(value("title", title))).map(Title::label).findFirst().orElse("NONE"));
+        Signals.text(PlApp.APP, "cos_title_selected", PdaWidgets.TEXT_MAX, app -> "SELECTED: " + titles().stream().filter(t -> t.key.equals(value("title", title))).map(Title::label).findFirst().orElse("NONE"));
         Signals.items(PlApp.APP, "cos_titles", app -> titles(), TITLE);
-        Signals.text(TITLE, "label", 48, t -> t.label + (t.allowed ? "" : " [rank/grant required]"));
+        Signals.text(TITLE, "label", PdaWidgets.TEXT_MAX, t -> t.label + (t.allowed ? "" : " [rank/grant required]"));
         Signals.items(PlApp.APP, "cos_slots", app -> slots(), SLOT);
-        Signals.text(SLOT, "label", 24, s -> (s.index + 1) + ":" + (s.count == 0 ? "-" : s.name));
+        Signals.text(SLOT, "label", PdaWidgets.TEXT_MAX, s -> (s.index + 1) + ":" + (s.count == 0 ? "-" : s.name));
         Signals.bool(SLOT, "filled", s -> s.count > 0);
     }
 
@@ -131,14 +132,14 @@ final class CosmeticsClientPage implements PdaClientPage {
     private WidgetDef button(float width, float height, String label, String enabled, UiAction action) {
         return new Button(action, enabled, PdaShell.PANEL, PdaShell.HOVER, PdaShell.PRESS, PdaShell.EDGE,
                 1, 0, 3, 2, width, height, Point.CENTER,
-                new com.wf.wflib.ui.widget.Text(label, PdaShell.TEXT, false, "1", Float.toString(width - 8)));
+                PdaWidgets.fit(label, PdaShell.TEXT, width - 8));
     }
 
     private WidgetDef tabButton(String label, UiAction action, boolean selected) {
         return new Button(action, "true", selected ? PdaShell.PRESS : PdaShell.PANEL,
                 PdaShell.HOVER, PdaShell.PRESS, selected ? PdaShell.ACCENT : PdaShell.EDGE,
                 1, 0, 4, 2, 70, 20, Point.CENTER,
-                new com.wf.wflib.ui.widget.Text(label, selected ? PdaShell.ACCENT : PdaShell.TEXT, false, "1", "62"));
+                PdaWidgets.fit(label, selected ? PdaShell.ACCENT : PdaShell.TEXT, 62));
     }
 
     public WidgetDef build() {
@@ -160,7 +161,7 @@ final class CosmeticsClientPage implements PdaClientPage {
         return stack(
                 at("8", "6", text("PREVIEW", PdaShell.DIM)), at("62", "6", clip(308, 12, previewWidget())),
                 at("8", "24", row(4, tabs.toArray(WidgetDef[]::new))),
-                at("8", "51", new com.wf.wflib.ui.widget.Text("{pda_pl.cos_lock}", PdaShell.DIM, false, "1", "366")),
+                at("8", "51", PdaWidgets.wrap("{pda_pl.cos_lock}", PdaShell.DIM, 366, 2)),
                 when("pda_pl.cos_tab == 0", stack(
                         at("8", "70", row(3, swatches.toArray(WidgetDef[]::new))),
                         at("8", "98", button(192, 22, "CUSTOM: {pda_pl.cos_color}", "true", item -> prompt("Name colour (#rrggbb or &a)", 8, value("color", color), input -> {
@@ -190,7 +191,7 @@ final class CosmeticsClientPage implements PdaClientPage {
                         at("8", "174", button(100, 18, "APPLY TITLE", "pda_pl.cos_title_apply", item -> send("title", value("title", title).isEmpty() ? "off" : value("title", title)))))),
                 when("pda_pl.cos_tab == 4", stack(
                         at("8", "68", button(242, 20, "{pda_pl.cos_price}", "pda_pl.cos_skull_allowed", item -> send("skull"))),
-                        at("8", "94", new com.wf.wflib.ui.widget.Text("{pda_pl.cos_hat}", PdaShell.DIM, false, "1", "366")),
+                        at("8", "94", PdaWidgets.wrap("{pda_pl.cos_hat}", PdaShell.DIM, 366, 2)),
                         at("8", "108", grid("pda_pl.cos_slots", 9, 2, slot)),
                         at("8", "174", button(148, 16, "WEAR SELECTED AS HAT", "pda_pl.cos_wear", item -> PdaClientSetup.send(id(), "hat", List.of(), selectedSlot))),
                         at("164", "178", text("Helmet slot must be empty.", PdaShell.DIM)))));

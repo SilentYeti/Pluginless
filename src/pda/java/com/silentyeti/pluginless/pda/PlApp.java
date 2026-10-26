@@ -19,7 +19,9 @@ import static com.wf.wflib.ui.Ui.button;
 import static com.wf.wflib.ui.Ui.place;
 import static com.wf.wflib.ui.Ui.rect;
 import static com.wf.wflib.ui.Ui.stack;
-import static com.wf.wflib.ui.Ui.text;
+import static com.silentyeti.pluginless.pda.PdaWidgets.fit;
+import static com.silentyeti.pluginless.pda.PdaWidgets.wrap;
+import static com.silentyeti.pluginless.pda.PdaWidgets.text;
 import static com.wf.wflib.ui.Ui.when;
 
 /**
@@ -39,13 +41,13 @@ public final class PlApp implements PdaApp {
         var pages = PdaClientSetup.pages();
         Signals.num(APP, "page", app -> index(pages));
         Signals.bool(APP, "sub", app -> index(pages) > 0);
-        Signals.text(APP, "title", 24, app -> title(pages));
-        Signals.text(APP, "balance", 24, app -> {
+        Signals.text(APP, "title", PdaWidgets.TEXT_MAX, app -> title(pages));
+        Signals.text(APP, "balance", PdaWidgets.TEXT_MAX, app -> {
             var view = PdaClientState.view(PdaClientState.page());
             return PdaClientState.money(view, PdaClientState.number(view, "balance"));
         });
         Signals.num(APP, "unread", app -> PdaClientState.number(PdaClientState.view("home"), "unread"));
-        Signals.text(APP, "msg", 64, app -> PdaClientState.message());
+        Signals.text(APP, "msg", PdaWidgets.TEXT_MAX, app -> PdaClientState.message());
         Signals.bool(APP, "msg_ok", app -> !PdaClientState.message().isEmpty() && PdaClientState.messageOk());
         Signals.bool(APP, "msg_bad", app -> !PdaClientState.message().isEmpty() && !PdaClientState.messageOk());
         for (var page : pages) page.signals();
@@ -89,14 +91,15 @@ public final class PlApp implements PdaApp {
         tree.add(when("pda_pl.sub", stack(
                 at("2", "2", button(PdaShell.PANEL, PdaShell.HOVER, 4, item -> PdaClientSetup.open("home"),
                         text("< BACK", PdaShell.TEXT))),
-                at("56", "5", text("{pda_pl.title}", PdaShell.ACCENT)))));
+                at("56", "5", fit("{pda_pl.title}", PdaShell.ACCENT, 200)))));
         tree.add(place(Float.toString(PdaClientSetup.AREA_WIDTH - 8), "5", Point.TOP_RIGHT,
                 text("{pda_pl.balance}", PdaShell.ACCENT)));
-        tree.add(when("pda_pl.msg_ok", at("8", Float.toString(TOP + PdaClientSetup.AREA_HEIGHT - 12), text("{pda_pl.msg}", PdaShell.ACCENT))));
-        tree.add(when("pda_pl.msg_bad", at("8", Float.toString(TOP + PdaClientSetup.AREA_HEIGHT - 12), text("{pda_pl.msg}", PdaShell.ALERT))));
+        tree.add(when("pda_pl.msg_ok", at("8", Float.toString(TOP + PdaClientSetup.AREA_HEIGHT - 20), wrap("{pda_pl.msg}", PdaShell.ACCENT, 368, 2))));
+        tree.add(when("pda_pl.msg_bad", at("8", Float.toString(TOP + PdaClientSetup.AREA_HEIGHT - 20), wrap("{pda_pl.msg}", PdaShell.ALERT, 368, 2))));
         for (int i = 0; i < pages.size(); i++) {
             tree.add(when("pda_pl.page == " + i, at("0", Float.toString(TOP), pages.get(i).build())));
         }
+        tree.add(new TextTip());
         return stack(tree.toArray(WidgetDef[]::new));
     }
 }

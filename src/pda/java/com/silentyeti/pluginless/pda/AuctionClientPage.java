@@ -22,7 +22,9 @@ import static com.wf.wflib.ui.Ui.list;
 import static com.wf.wflib.ui.Ui.row;
 import static com.wf.wflib.ui.Ui.repeat;
 import static com.wf.wflib.ui.Ui.stack;
-import static com.wf.wflib.ui.Ui.text;
+import static com.silentyeti.pluginless.pda.PdaWidgets.fit;
+import static com.silentyeti.pluginless.pda.PdaWidgets.text;
+import static com.silentyeti.pluginless.pda.PdaWidgets.wrap;
 import static com.wf.wflib.ui.Ui.when;
 
 /**
@@ -71,7 +73,6 @@ final class AuctionClientPage implements PdaClientPage {
         return seconds >= 3600 ? seconds / 3600 + "H" : seconds >= 60 ? seconds / 60 + "M" : seconds + "S";
     }
 
-    private static String shorten(String name, int max) { return name.length() <= max ? name : name.substring(0, max - 1) + "."; }
 
     private static void query() {
         quoted = BAR.amount;
@@ -95,8 +96,8 @@ final class AuctionClientPage implements PdaClientPage {
         Signals.bool(AUC, "tab_mine", a -> tab == 1);
         Signals.bool(AUC, "tab_sell", a -> tab == 2);
         Signals.bool(AUC, "tab_list", a -> tab != 2);
-        Signals.text(AUC, "mine_label", 12, a -> "MINE " + array("mine").size());
-        Signals.text(AUC, "boxed", 16, a -> "COLLECT " + number(view(), "boxed"));
+        Signals.text(AUC, "mine_label", PdaWidgets.TEXT_MAX, a -> "MINE " + array("mine").size());
+        Signals.text(AUC, "boxed", PdaWidgets.TEXT_MAX, a -> "COLLECT " + number(view(), "boxed"));
         Signals.bool(AUC, "has_boxed", a -> number(view(), "boxed") > 0);
         Signals.items(AUC, "cats", a -> cats(), CAT);
         Signals.items(AUC, "rows", a -> rows(), ROW);
@@ -105,17 +106,17 @@ final class AuctionClientPage implements PdaClientPage {
         for (var option : new String[][]{{"sort_new", ""}, {"sort_price", "price"}, {"sort_expensive", "expensive"}, {"sort_oldest", "oldest"}}) {
             Signals.bool(AUC, option[0], a -> sort.equals(option[1]));
         }
-        Signals.text(AUC, "search", 24, a -> search.isEmpty() ? "SEARCH" : search.toUpperCase());
-        Signals.text(AUC, "pager", 16, a -> "PAGE " + (number(view().has("query") ? view().getAsJsonObject("query") : new JsonObject(), "page") + 1)
+        Signals.text(AUC, "search", PdaWidgets.TEXT_MAX, a -> search.isEmpty() ? "SEARCH" : search.toUpperCase());
+        Signals.text(AUC, "pager", PdaWidgets.TEXT_MAX, a -> "PAGE " + (number(view().has("query") ? view().getAsJsonObject("query") : new JsonObject(), "page") + 1)
                 + "/" + number(view().has("query") ? view().getAsJsonObject("query") : new JsonObject(), "pages"));
         Signals.bool(AUC, "has_sel", a -> current() != null);
-        Signals.text(AUC, "sel_name", 28, a -> current() == null ? "" : shorten(PdaClientState.text(current(), "name"), 28));
-        Signals.text(AUC, "sel_who", 32, a -> current() == null ? "" : number(current(), "count") + "X  BY " + shorten(PdaClientState.text(current(), "seller").toUpperCase(), 12));
-        Signals.text(AUC, "sel_price", 32, a -> current() == null ? "" : (flag(current(), "auction") ? (flag(current(), "bids") ? "BID " : "FROM ") : "PRICE ")
+        Signals.text(AUC, "sel_name", PdaWidgets.TEXT_MAX, a -> current() == null ? "" : PdaClientState.text(current(), "name"));
+        Signals.text(AUC, "sel_who", PdaWidgets.TEXT_MAX, a -> current() == null ? "" : number(current(), "count") + "X  BY " + PdaClientState.text(current(), "seller").toUpperCase());
+        Signals.text(AUC, "sel_price", PdaWidgets.TEXT_MAX, a -> current() == null ? "" : (flag(current(), "auction") ? (flag(current(), "bids") ? "BID " : "FROM ") : "PRICE ")
                 + PdaClientState.money(view(), number(current(), "price")));
-        Signals.text(AUC, "sel_next", 32, a -> current() == null || !flag(current(), "auction") ? ""
+        Signals.text(AUC, "sel_next", PdaWidgets.TEXT_MAX, a -> current() == null || !flag(current(), "auction") ? ""
                 : (flag(current(), "leading") ? "YOU LEAD" : "MIN " + PdaClientState.money(view(), number(current(), "minBid"))));
-        Signals.text(AUC, "sel_time", 16, a -> current() == null ? "" : "ENDS " + time(number(current(), "seconds")));
+        Signals.text(AUC, "sel_time", PdaWidgets.TEXT_MAX, a -> current() == null ? "" : "ENDS " + time(number(current(), "seconds")));
         Signals.bool(AUC, "can_buy", a -> current() != null && !flag(current(), "mine") && !flag(current(), "auction"));
         Signals.bool(AUC, "can_bid", a -> current() != null && !flag(current(), "mine") && flag(current(), "auction") && BAR.amount >= number(current(), "minBid"));
         Signals.bool(AUC, "can_cancel", a -> current() != null && flag(current(), "mine"));
@@ -123,13 +124,13 @@ final class AuctionClientPage implements PdaClientPage {
         Signals.bool(AUC, "mode_fixed", a -> !auctionMode);
         Signals.bool(AUC, "mode_auction", a -> auctionMode);
         Signals.bool(AUC, "can_list", a -> slot >= 0 && BAR.amount >= number(view(), "min") && BAR.amount <= number(view(), "max"));
-        Signals.text(AUC, "fee", 40, a -> BAR.amount <= 0 ? "" : "FEE " + PdaClientState.money(view(), number(view(), "fee")) + "  TAX " + (view().has("tax") ? view().get("tax").getAsDouble() : 0) + "%");
-        Signals.text(AUC, "limits", 40, a -> "MIN " + PdaClientState.money(view(), number(view(), "min")) + "  SLOTS " + number(view(), "slots") + "  " + number(view(), "hours") + "H");
-        Signals.text(CAT, "label", 10, Cat::label);
+        Signals.text(AUC, "fee", PdaWidgets.TEXT_MAX, a -> BAR.amount <= 0 ? "" : "FEE " + PdaClientState.money(view(), number(view(), "fee")) + "  TAX " + (view().has("tax") ? view().get("tax").getAsDouble() : 0) + "%");
+        Signals.text(AUC, "limits", PdaWidgets.TEXT_MAX, a -> "MIN " + PdaClientState.money(view(), number(view(), "min")) + "  SLOTS " + number(view(), "slots") + "  " + number(view(), "hours") + "H");
+        Signals.text(CAT, "label", PdaWidgets.TEXT_MAX, Cat::label);
         Signals.bool(CAT, "selected", Cat::selected);
-        Signals.text(ROW, "label", 56, Row::label);
+        Signals.text(ROW, "label", PdaWidgets.TEXT_MAX, Row::label);
         Signals.bool(ROW, "selected", Row::selected);
-        Signals.text(SLOT, "label", 40, Slot::label);
+        Signals.text(SLOT, "label", PdaWidgets.TEXT_MAX, Slot::label);
         Signals.bool(SLOT, "selected", Slot::selected);
     }
 
@@ -138,7 +139,7 @@ final class AuctionClientPage implements PdaClientPage {
         result.add(new Cat("", "ALL", category.isEmpty()));
         for (var name : array("categories")) {
             var value = name.getAsString();
-            result.add(new Cat(value, shorten(value.toUpperCase(), 8), value.equals(category)));
+            result.add(new Cat(value, value.toUpperCase(), value.equals(category)));
         }
         return result;
     }
@@ -148,7 +149,7 @@ final class AuctionClientPage implements PdaClientPage {
         for (var element : array(tab == 1 ? "mine" : "listings")) {
             var row = element.getAsJsonObject();
             long id = number(row, "id");
-            result.add(new Row(id, shorten(PdaClientState.text(row, "name"), 20) + " X" + number(row, "count") + "  "
+            result.add(new Row(id, PdaClientState.text(row, "name") + " X" + number(row, "count") + "  "
                     + PdaClientState.money(view(), number(row, "price")) + (flag(row, "auction") ? " BID" : "") + "  " + time(number(row, "seconds")), id == selected));
         }
         return result;
@@ -160,7 +161,7 @@ final class AuctionClientPage implements PdaClientPage {
         if (player == null) return result;
         for (int i = 0; i < 36; i++) {
             var stack = player.getInventory().getItem(i);
-            if (!stack.isEmpty()) result.add(new Slot(i, shorten(stack.getHoverName().getString(), 24) + " X" + stack.getCount(), i == slot));
+            if (!stack.isEmpty()) result.add(new Slot(i, stack.getHoverName().getString() + " X" + stack.getCount(), i == slot));
         }
         return result;
     }
@@ -199,16 +200,16 @@ final class AuctionClientPage implements PdaClientPage {
                         at(80, 144, button(">", () -> { pageNumber++; query(); })))),
                 card(242, 20, 134, 108, "DETAIL"),
                 when("pda_pl_auc.has_sel", stack(
-                        at(247, 32, text("{pda_pl_auc.sel_name}", PdaShell.ACCENT)),
-                        at(247, 44, text("{pda_pl_auc.sel_who}", PdaShell.TEXT)),
-                        at(247, 56, text("{pda_pl_auc.sel_price}", PdaShell.TEXT)),
-                        at(247, 66, text("{pda_pl_auc.sel_next}", PdaShell.DIM)),
-                        at(247, 76, text("{pda_pl_auc.sel_time}", PdaShell.DIM)),
-                        at(247, 92, row(2,
+                        at(247, 32, wrap("{pda_pl_auc.sel_name}", PdaShell.ACCENT, 124, 2)),
+                        at(247, 52, fit("{pda_pl_auc.sel_who}", PdaShell.TEXT, 124)),
+                        at(247, 62, fit("{pda_pl_auc.sel_price}", PdaShell.TEXT, 124)),
+                        at(247, 72, fit("{pda_pl_auc.sel_next}", PdaShell.DIM, 124)),
+                        at(247, 82, fit("{pda_pl_auc.sel_time}", PdaShell.DIM, 124)),
+                        at(247, 96, row(2,
                                 button("BUY", "pda_pl_auc.can_buy", () -> PdaClientSetup.send("auction", "buy", Long.toString(selected))),
                                 button("BID", "pda_pl_auc.can_bid", () -> PdaClientSetup.send("auction", "bid", Long.toString(selected), Long.toString(BAR.amount))),
                                 button("CANCEL", "pda_pl_auc.can_cancel", () -> PdaClientSetup.send("auction", "cancel", Long.toString(selected))))),
-                        at(247, 108, row(2,
+                        at(247, 112, row(2,
                                 button("WATCH", "pda_pl_auc.can_watch", () -> {
                                     var chosen = current();
                                     if (chosen != null) PdaClientSetup.send("auction", "watch", PdaClientState.text(chosen, "item"));

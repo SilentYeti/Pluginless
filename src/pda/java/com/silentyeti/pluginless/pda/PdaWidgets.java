@@ -10,12 +10,29 @@ import net.minecraft.network.chat.Component;
 import java.util.function.Consumer;
 
 import static com.wf.wflib.ui.Ui.stack;
-import static com.wf.wflib.ui.Ui.text;
 import static com.wf.wflib.ui.Ui.when;
 
 /** Small pieces every page uses, so the pages look alike. Coordinates are layout units inside the page area. */
 public final class PdaWidgets {
+    /** Capacity of a text signal: far above any real string, so the signal never cuts text; fitting is done at draw time. */
+    public static final int TEXT_MAX = 1200;
+
     private PdaWidgets() {}
+
+    /** Text to the page edge from where it is placed; ellipsis only if it would run past. */
+    public static WidgetDef text(String template, String color) {
+        return new PdaText(template, color, 0, 1);
+    }
+
+    /** One line in a box {@code width} units wide. */
+    public static WidgetDef fit(String template, String color, float width) {
+        return new PdaText(template, color, width, 1);
+    }
+
+    /** Up to {@code lines} lines in a box {@code width} wide, wrapped at words. */
+    public static WidgetDef wrap(String template, String color, float width, int lines) {
+        return new PdaText(template, color, width, lines);
+    }
 
     public static WidgetDef button(String label, Runnable run) {
         return button(label, "true", run);
@@ -41,9 +58,9 @@ public final class PdaWidgets {
     public static WidgetDef row(String template, float width, String selected, UiAction action) {
         return when(selected,
                 new Button(action, "true", PdaShell.PRESS, PdaShell.HOVER, PdaShell.PRESS, PdaShell.ACCENT,
-                        1, 0, 4, 1, width, 11, Point.LEFT, new com.wf.wflib.ui.widget.Text(template, PdaShell.ACCENT, false, "1", Float.toString(width - 8))),
+                        1, 0, 4, 1, width, 11, Point.LEFT, fit(template, PdaShell.ACCENT, width - 8)),
                 new Button(action, "true", PdaShell.PANEL, PdaShell.HOVER, PdaShell.PRESS, PdaShell.PANEL,
-                        1, 0, 4, 1, width, 11, Point.LEFT, new com.wf.wflib.ui.widget.Text(template, PdaShell.TEXT, false, "1", Float.toString(width - 8))));
+                        1, 0, 4, 1, width, 11, Point.LEFT, fit(template, PdaShell.TEXT, width - 8)));
     }
 
     /** A bordered panel with a dim title; callers place their own content with absolute coordinates. */

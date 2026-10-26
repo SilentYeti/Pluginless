@@ -43,7 +43,8 @@ final class StocksPage implements PdaPage {
         if (!chosen.isEmpty()) {
             var stock = config.stocks.get(chosen);
             var state = StockExchange.state(server, chosen);
-            view.addProperty("description", stock.description);
+            // Admin text has no length rule; the packet is bounded, and a clip is marked with "..." so it never looks complete.
+            view.addProperty("description", stock.description.length() > 1000 ? stock.description.substring(0, 997) + "..." : stock.description);
             view.addProperty("buy", Stocks.quote(stock, state, true));
             view.addProperty("sell", Stocks.quote(stock, state, false));
             view.addProperty("limit", stock.holdingLimit);

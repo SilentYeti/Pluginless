@@ -21,7 +21,9 @@ import static com.wf.wflib.ui.Ui.list;
 import static com.wf.wflib.ui.Ui.row;
 import static com.wf.wflib.ui.Ui.row;
 import static com.wf.wflib.ui.Ui.stack;
-import static com.wf.wflib.ui.Ui.text;
+import static com.silentyeti.pluginless.pda.PdaWidgets.fit;
+import static com.silentyeti.pluginless.pda.PdaWidgets.wrap;
+import static com.silentyeti.pluginless.pda.PdaWidgets.text;
 import static com.wf.wflib.ui.Ui.when;
 
 /**
@@ -64,12 +66,12 @@ final class BankClientPage implements PdaClientPage {
 
     public void signals() {
         BAR.signals(BANK);
-        Signals.text(BANK, "target", 20, b -> target.isEmpty() ? "SELECT A PLAYER" : target);
-        Signals.text(BANK, "fee", 40, b -> fee() > 0 ? "FEE " + PdaClientState.money(view(), fee()) : "");
-        Signals.text(BANK, "loan", 40, b -> "DEBT " + PdaClientState.money(view(), debt()) + " / " + PdaClientState.money(view(), PdaClientState.number(view(), "limit")));
-        Signals.text(BANK, "interest", 24, b -> view().has("interest") ? view().get("interest").getAsDouble() + "% PER DAY" : "");
-        Signals.text(BANK, "requests_label", 16, b -> hasRequest() ? "REQUESTS 1" : "REQUESTS");
-        Signals.text(BANK, "request_text", 60, b -> hasRequest()
+        Signals.text(BANK, "target", PdaWidgets.TEXT_MAX, b -> target.isEmpty() ? "SELECT A PLAYER" : target);
+        Signals.text(BANK, "fee", PdaWidgets.TEXT_MAX, b -> fee() > 0 ? "FEE " + PdaClientState.money(view(), fee()) : "");
+        Signals.text(BANK, "loan", PdaWidgets.TEXT_MAX, b -> "DEBT " + PdaClientState.money(view(), debt()) + " / " + PdaClientState.money(view(), PdaClientState.number(view(), "limit")));
+        Signals.text(BANK, "interest", PdaWidgets.TEXT_MAX, b -> view().has("interest") ? view().get("interest").getAsDouble() + "% PER DAY" : "");
+        Signals.text(BANK, "requests_label", PdaWidgets.TEXT_MAX, b -> hasRequest() ? "REQUESTS 1" : "REQUESTS");
+        Signals.text(BANK, "request_text", PdaWidgets.TEXT_MAX, b -> hasRequest()
                 ? PdaClientState.text(request(), "from") + " ASKS " + PdaClientState.money(view(), PdaClientState.number(request(), "cents"))
                 + " (" + PdaClientState.number(request(), "seconds") + "S)" : "NO REQUEST");
         Signals.bool(BANK, "can_send", b -> BAR.amount > 0 && !target.isEmpty());
@@ -81,10 +83,10 @@ final class BankClientPage implements PdaClientPage {
         Signals.items(BANK, "people", b -> people(), PERSON);
         Signals.items(BANK, "history", b -> history(), TX);
         Signals.bool(BANK, "no_history", b -> history().isEmpty());
-        Signals.text(PERSON, "name", 16, Person::name);
+        Signals.text(PERSON, "name", PdaWidgets.TEXT_MAX, Person::name);
         Signals.bool(PERSON, "selected", Person::selected);
-        Signals.text(TX, "clock", 5, Tx::clock);
-        Signals.text(TX, "text", 48, Tx::text);
+        Signals.text(TX, "clock", PdaWidgets.TEXT_MAX, Tx::clock);
+        Signals.text(TX, "text", PdaWidgets.TEXT_MAX, Tx::text);
         Signals.bool(TX, "in", t -> t.kind().equals("in"));
         Signals.bool(TX, "out", t -> t.kind().equals("out"));
         Signals.bool(TX, "debt", t -> t.kind().equals("debt"));
@@ -136,8 +138,8 @@ final class BankClientPage implements PdaClientPage {
         tree.add(at(46, 164, button("REQUEST", "pda_pl_bank.can_send", () -> send("request"))));
 
         tree.add(card(196, 26, 180, 44, "LOAN"));
-        tree.add(at(236, 30, text("{pda_pl_bank.interest}", PdaShell.DIM)));
-        tree.add(at(201, 40, text("{pda_pl_bank.loan}", PdaShell.TEXT)));
+        tree.add(at(236, 30, fit("{pda_pl_bank.interest}", PdaShell.DIM, 135)));
+        tree.add(at(201, 40, fit("{pda_pl_bank.loan}", PdaShell.TEXT, 170)));
         tree.add(at(201, 54, button("BORROW", "pda_pl_bank.can_borrow", () -> PdaClientSetup.send("bank", "borrow", Long.toString(BAR.amount)))));
         tree.add(at(250, 54, button("REPAY", "pda_pl_bank.can_repay", () -> PdaClientSetup.send("bank", "repay", Long.toString(BAR.amount)))));
 
@@ -148,12 +150,12 @@ final class BankClientPage implements PdaClientPage {
         tree.add(when("pda_pl_bank.tab_history", stack(
                 at(201, 95, list("pda_pl_bank.history", 11, 1, "170", "88", PdaShell.EDGE, row(5,
                         text("{pda_pl_bank_tx.clock}", PdaShell.DIM),
-                        when("pda_pl_bank_tx.in", text("{pda_pl_bank_tx.text}", PdaShell.ACCENT),
-                                when("pda_pl_bank_tx.debt", text("{pda_pl_bank_tx.text}", PdaShell.ALERT),
-                                        text("{pda_pl_bank_tx.text}", PdaShell.TEXT)))))),
+                        when("pda_pl_bank_tx.in", fit("{pda_pl_bank_tx.text}", PdaShell.ACCENT, 138),
+                                when("pda_pl_bank_tx.debt", fit("{pda_pl_bank_tx.text}", PdaShell.ALERT, 138),
+                                        fit("{pda_pl_bank_tx.text}", PdaShell.TEXT, 138)))))),
                 when("pda_pl_bank.no_history", at(201, 98, text("NOTHING YET", PdaShell.DIM))))));
         tree.add(when("pda_pl_bank.tab_requests", stack(
-                at(201, 100, text("{pda_pl_bank.request_text}", PdaShell.TEXT)),
+                at(201, 100, wrap("{pda_pl_bank.request_text}", PdaShell.TEXT, 170, 2)),
                 when("pda_pl_bank.has_request", stack(
                         at(201, 116, button("ACCEPT", () -> PdaClientSetup.send("bank", "accept"))),
                         at(246, 116, button("DECLINE", () -> PdaClientSetup.send("bank", "decline"))))))));

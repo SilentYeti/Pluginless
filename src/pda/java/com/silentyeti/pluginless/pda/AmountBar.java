@@ -14,7 +14,7 @@ import java.util.function.Supplier;
 import static com.silentyeti.pluginless.pda.PdaWidgets.at;
 import static com.silentyeti.pluginless.pda.PdaWidgets.button;
 import static com.silentyeti.pluginless.pda.PdaWidgets.chip;
-import static com.wf.wflib.ui.Ui.text;
+import static com.silentyeti.pluginless.pda.PdaWidgets.text;
 import static com.wf.wflib.ui.Ui.row;
 
 /**
@@ -40,7 +40,7 @@ final class AmountBar {
     }
 
     <S> void signals(Subject<S> on) {
-        Signals.text(on, "amount", 20, s -> PdaClientState.money(view.get(), amount));
+        Signals.text(on, "amount", PdaWidgets.TEXT_MAX, s -> PdaClientState.money(view.get(), amount));
         for (int i = 0; i < steps.length; i++) {
             long value = steps[i];
             Signals.bool(on, "step" + i, s -> step == value);
