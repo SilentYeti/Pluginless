@@ -20,8 +20,9 @@ public final class PdaTextAudit {
     private static final Map<String, Entry> DRAWN = new LinkedHashMap<>();
     private static final List<Tip> TIPS = new ArrayList<>();
 
-    /** A full-text tooltip that was drawn: the whole source and the lines it was laid out in. */
-    public record Tip(String full, List<String> lines) {}
+    /** A full-text tooltip that was drawn: the whole source, the lines it was laid out in, and its box on the 384x240 PDA
+     * surface (always inside it). */
+    public record Tip(String full, List<String> lines, float x, float y, float width, float height) {}
 
     private PdaTextAudit() {}
 
@@ -36,7 +37,9 @@ public final class PdaTextAudit {
 
     public static synchronized void reset() { DRAWN.clear(); TIPS.clear(); }
 
-    static synchronized void tip(String full, List<String> lines) { TIPS.add(new Tip(full, List.copyOf(lines))); }
+    static synchronized void tip(String full, List<String> lines, float x, float y, float width, float height) {
+        TIPS.add(new Tip(full, List.copyOf(lines), x, y, width, height));
+    }
 
     /** Tooltips drawn since the last {@link #reset}; a clipped text under the cursor must appear here with its full source. */
     public static synchronized List<Tip> tips() { return new ArrayList<>(TIPS); }

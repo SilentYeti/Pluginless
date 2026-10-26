@@ -18,6 +18,8 @@ record TextTip() implements WidgetDef {
     private static final float WIDTH = 340;
     /** As many lines as the page has room for; a text longer than that ends in "..." inside the box. */
     private static final int MAX_LINES = 24;
+    private static final float PAGE_W = 384;
+    private static final float PAGE_H = 240;
     private static final int BACK = 0xF0202220;
     private static final int EDGE = 0xFFA9D46C;
     private static final int TEXT = 0xFFD2D6CC;
@@ -55,23 +57,28 @@ record TextTip() implements WidgetDef {
                     AT.clear();
                 }
                 Canvas canvas = ev.canvas;
-                List<String> lines = TextFit.layout(canvas, full, WIDTH - 8, MAX_LINES);
+                // The whole box stays on the page (0..PAGE_W x 0..PAGE_H, 4 margin); lines are capped to what fits.
+                int fits = (int) Math.max(1, Math.floor((PAGE_H - 8 - 6) / (float) canvas.lineHeight()));
+                List<String> lines = TextFit.layout(canvas, full, WIDTH - 8, Math.min(MAX_LINES, fits));
                 float widest = 0;
                 for (String line : lines) {
                     widest = Math.max(widest, canvas.width(line));
                 }
                 float bw = widest + 8;
                 float bh = lines.size() * canvas.lineHeight() + 6;
-                // Keep it inside the page: below the text, or above it when there is no room.
-                float bx = Math.max(4, Math.min(at[0], 380 - bw));
-                float by = at[1] + 12 + bh > 236 ? at[1] - bh - 2 : at[1] + 12;
+                float bx = Math.max(4, Math.min(at[0], PAGE_W - 4 - bw));
+                float by = at[1] + 12;
+                if (by + bh > PAGE_H - 4) {
+                    by = at[1] - bh - 2;
+                }
+                by = Math.max(4, Math.min(by, PAGE_H - 4 - bh));
                 canvas.fill(bx - 1, by - 1, bx + bw + 1, by + bh + 1, EDGE);
                 canvas.fill(bx, by, bx + bw, by + bh, BACK);
                 for (int i = 0; i < lines.size(); i++) {
                     canvas.text(lines.get(i), bx + 4, by + 3 + i * canvas.lineHeight(), TEXT, false);
                 }
                 if (PdaTextAudit.enabled()) {
-                    PdaTextAudit.tip(full, lines);
+                    PdaTextAudit.tip(full, lines, bx, by, bw, bh);
                 }
             }
         };
