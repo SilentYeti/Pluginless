@@ -12,6 +12,10 @@
     "WWWWMMMM": {
       "name": "Wide words WWWW MMMM repeat across this long company name",
       "description": "WWWW MMMM measured text must preserve every word. WWWW MMMM measured text must preserve every word. WWWW MMMM measured text must preserve every word. WWWW MMMM measured text must preserve every word. WWWW MMMM measured text must preserve every word. WWWW MMMM measured text must preserve every word. WWWW MMMM measured text must preserve every word. WWWW MMMM measured text must preserve every word. WWWW MMMM measured text must preserve every word. WWWW MMMM measured text must preserve every word. WWWW MMMM measured text must preserve every word. WWWW MMMM measured text must preserve every word. END_OF_LONG_STOCK_DESCRIPTION"
+    },
+    "MAXTEXT": {
+      "name": "Maximum length stock description",
+      "description": "WWWW MMMM boundary description must remain reachable. WWWW MMMM boundary description must remain reachable. WWWW MMMM boundary description must remain reachable. WWWW MMMM boundary description must remain reachable. WWWW MMMM boundary description must remain reachable. WWWW MMMM boundary description must remain reachable. WWWW MMMM boundary description must remain reachable. WWWW MMMM boundary description must remain reachable. WWWW MMMM boundary description must remain reachable. WWWW MMMM boundary description must remain reachable. WWWW MMMM boundary description must remain reachable. WWWW MMMM boundary description must remain reachable. WWWW MMMM boundary description must remain reachable. WWWW MMMM boundary description must remain reachable. WWWW MMMM boundary description must remain reachable. WWWW MMMM boundary description must remain reachable. WWWW MMMM boundary description must remain reachable. WWWW MMMM boundary description must remain reachable. END_OF_MAX_STOCK_DESCRIPTION"
     }
   }
 }

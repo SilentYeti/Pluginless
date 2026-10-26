@@ -214,9 +214,23 @@ final class TextAudit {
                     if (!full.equals(source)) continue;
                     found = true;
                     String shown = String.join("", lines.stream().map(Object::toString).toList());
-                    disclosures.add(Map.of("source", source, "lines", lines));
+                    var detail = new LinkedHashMap<String, Object>();
+                    detail.put("source", source);
+                    detail.put("lines", lines);
+                    for (var part : tip.getClass().getRecordComponents())
+                        detail.put(part.getName(), part.getAccessor().invoke(tip));
+                    disclosures.add(detail);
                     if (!compact(full).equals(compact(shown))) errors.add("Tooltip still truncates full text: " + full + " -> " + shown);
-                    for (var line : lines) if (canvas.width(line.toString()) > 222.05f)
+                    float available = 222;
+                    if (detail.get("width") instanceof Number tipWidth) {
+                        available = tipWidth.floatValue() - 8;
+                        float tx = ((Number) detail.get("x")).floatValue();
+                        float ty = ((Number) detail.get("y")).floatValue();
+                        float th = ((Number) detail.get("height")).floatValue();
+                        if (tx < 3.95f || ty < 3.95f || tx + tipWidth.floatValue() > 380.05f || ty + th > 236.05f)
+                            errors.add("Tooltip extends outside PDA: " + detail);
+                    }
+                    for (var line : lines) if (canvas.width(line.toString()) > available + 0.05f)
                         errors.add("Tooltip line exceeds its box: " + line);
                 }
                 if (!found) errors.add("No full-text tooltip on hover: " + source);
