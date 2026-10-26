@@ -44,6 +44,9 @@ def write_action(control, number, **action):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--pda-theme', help='Override PDA theme in the disposable client JVM')
+    parser.add_argument('--curios-jar', type=Path, help='Optional Curios1.21.1 jar loaded in both disposable games')
+    parser.add_argument('--curios-slots', action='store_true', help='Enable charm+pda slots in disposable world only')
     parser.add_argument('--wflib', type=Path, default=ROOT.parent / 'WFLib-main')
     parser.add_argument('--apps', nargs='*', default=['wflib:terminal'], help='PDA IDs to open; missing/invisible apps fail')
     parser.add_argument('--ranks', type=Path, help='ranks.json to start the server with (default: the mod\'s own)')
@@ -82,6 +85,10 @@ def main():
         'gemrenderJar': cached('com.wf.gemrender', 'gemrender-1.21.1', '0.1.17-SNAPSHOT'),
         'flywheelJar': cached('dev.engine-room.flywheel', 'flywheel-neoforge-1.21.1', '1.0.6'),
     }
+    if args.curios_jar:
+        jars['curiosJar'] = args.curios_jar.resolve()
+    if args.curios_slots and not args.curios_jar:
+        parser.error('--curios-slots requires --curios-jar')
     runs = ROOT / 'build/pda-harness'
     runs.mkdir(parents=True, exist_ok=True)
     output = Path(tempfile.mkdtemp(prefix='run-', dir=runs))
@@ -127,6 +134,17 @@ def main():
             if args.stocks:
                 (game / 'config' / 'pluginless').mkdir(parents=True, exist_ok=True)
                 shutil.copy2(args.stocks, game / 'config' / 'pluginless' / 'stocks.json')
+            if args.curios_slots:
+                pack = game / 'world/datapacks/carry-test'
+                fixture = {'pack.mcmeta': {'pack': {'pack_format': 48, 'description': 'Disposable PDA Curios test slots'}},
+                           'data/carry_test/curios/entities/player.json': {'entities': ['minecraft:player'], 'slots': ['charm', 'pda']},
+                           'data/carry_test/curios/slots/charm.json': {'size': 1},
+                           'data/carry_test/curios/slots/pda.json': {'size': 1},
+                           'data/curios/tags/item/pda.json': {'replace': False, 'values': ['wflib:pda']}}
+                for name, value in fixture.items():
+                    dest = pack / name
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    dest.write_text(json.dumps(value))
             flat = json.dumps({'layers': [{'block': 'minecraft:bedrock', 'height': 1}, {'block': 'minecraft:dirt', 'height': 2}, {'block': 'minecraft:grass_block', 'height': 1}], 'biome': 'minecraft:plains', 'lakes': False, 'features': False})
             (game / 'server.properties').write_text(f'generator-settings={flat}\nonline-mode=false\nserver-ip=127.0.0.1\nserver-port={port}\nlevel-seed=160016\nlevel-type=minecraft:flat\nspawn-protection=0\nview-distance=3\nsimulation-distance=3\nmax-tick-time=-1\n')
         else:
@@ -137,12 +155,28 @@ def main():
         command = ['sh', str(ROOT / 'gradlew'), '-p', str(project), 'runHarness', '--console=plain', '--no-daemon',
                    f'-Pmode={mode}', f'-PgameDir={game}', f'-PcontrolDir={control}', f'-Pport={port}',
                    f'-PlongText={str(args.long_text).lower()}']
+        if mode == 'client' and args.pda_theme:
+            command.append(f'-PpdaTheme={args.pda_theme}')
         command += [f'-P{name}={path}' for name, path in jars.items()]
         return spawn(command, project, mode + '.log')
 
     def xdo(*values):
         subprocess.run(['xdotool', *map(str, values)], env=env, check=True, capture_output=True)
 
+    # Refuse overlap even if a stale lane-free message races another worker's launch.
+    busy = []
+    for proc in Path('/proc').iterdir():
+        if not proc.name.isdigit():
+            continue
+        try:
+            if (proc / 'exe').resolve().name == 'java' and b'pdaharness' in (proc / 'cmdline').read_bytes():
+                busy.append(proc.name)
+        except (OSError, ProcessLookupError):
+            pass
+    with socket.socket() as selftest_probe:
+        selftest_busy = selftest_probe.connect_ex(('127.0.0.1', 25598)) == 0
+    if busy or selftest_busy:
+        raise RuntimeError(f'Validation lane busy (PDA game PIDs={busy}, selftest25598={selftest_busy}); wait for its owner')
     try:
         if not args.show:
             display = next(number for number in range(200, 500) if not Path(f'/tmp/.X11-unix/X{number}').exists() and not Path(f'/tmp/.X{number}-lock').exists())
@@ -165,6 +199,7 @@ def main():
             steps += [{'op': 'app', 'id': app}, {'op': 'wait', 'seconds': 2}, {'op': 'screenshot', 'name': app.replace(':', '-')}]
         steps += steps_from_file
         receipts = []
+        carry_token = None
         for number, step in enumerate(steps, 1):
             op = step['op']
             if op == 'key': xdo('key', '--clearmodifiers', step['key'])
@@ -174,9 +209,19 @@ def main():
             elif op == 'wait': time.sleep(step['seconds'])
             else:
                 action = {'op': 'open', 'app': step['id']} if op == 'app' else {key: value for key, value in step.items() if key != 'name'}
-                write_action(control, number, **action)
+                if op.startswith('carry_'):
+                    channel = 'carry-server' if op in ('carry_move', 'carry_server_assert', 'carry_kill') else 'carry-client'
+                    temporary = control / (channel + '.tmp')
+                    temporary.write_text(json.dumps(dict(id=number, **action)))
+                    temporary.replace(control / (channel + '.json'))
+                else:
+                    write_action(control, number, **action)
                 receipt = wait_for(control / f'result-{number}.json', processes, 30)
                 if not receipt['ok']: raise RuntimeError(receipt)
+                if op == 'carry_move':
+                    carry_token = receipt['token']
+                if op == 'carry_assert' and receipt.get('count') == 1 and receipt.get('token') != carry_token:
+                    raise RuntimeError(f'Client/server PDA token mismatch: {receipt}')
                 if op == 'state' and not receipt.get('focused'): raise RuntimeError(f'PDA did not focus from mouse use: {receipt}')
                 if op == 'screenshot':
                     image = output / 'client/screenshots' / f'capture-{number}.png'

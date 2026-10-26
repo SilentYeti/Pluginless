@@ -1,0 +1,506 @@
+[
+  {
+    "op": "carry_bind",
+    "toggle": "key.keyboard.k",
+    "terminal": "key.keyboard.j",
+    "pluginless": "key.keyboard.h",
+    "require_unbound": true
+  },
+  {
+    "op": "key",
+    "key": "Escape"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.5
+  },
+  {
+    "op": "carry_move",
+    "target": "8"
+  },
+  {
+    "op": "wait",
+    "seconds": 1
+  },
+  {
+    "op": "carry_assert",
+    "focused": false,
+    "virtual": false,
+    "source": "8",
+    "count": 1,
+    "curios_loaded": false
+  },
+  {
+    "op": "key",
+    "key": "k"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.6
+  },
+  {
+    "op": "carry_assert",
+    "focused": true,
+    "virtual": true,
+    "held": true,
+    "source": "8"
+  },
+  {
+    "op": "screenshot",
+    "name": "carried-8"
+  },
+  {
+    "op": "key",
+    "key": "q"
+  },
+  {
+    "op": "key",
+    "key": "f"
+  },
+  {
+    "op": "click",
+    "button": 1
+  },
+  {
+    "op": "wait",
+    "seconds": 0.5
+  },
+  {
+    "op": "carry_server_assert"
+  },
+  {
+    "op": "key",
+    "key": "Escape"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.5
+  },
+  {
+    "op": "carry_assert",
+    "focused": false,
+    "virtual": false,
+    "held": false,
+    "source": "8"
+  },
+  {
+    "op": "carry_server_assert"
+  },
+  {
+    "op": "carry_move",
+    "target": "17"
+  },
+  {
+    "op": "wait",
+    "seconds": 1
+  },
+  {
+    "op": "carry_assert",
+    "focused": false,
+    "virtual": false,
+    "source": "17",
+    "count": 1,
+    "curios_loaded": false
+  },
+  {
+    "op": "key",
+    "key": "k"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.6
+  },
+  {
+    "op": "carry_assert",
+    "focused": true,
+    "virtual": true,
+    "held": true,
+    "source": "17"
+  },
+  {
+    "op": "screenshot",
+    "name": "carried-17"
+  },
+  {
+    "op": "key",
+    "key": "q"
+  },
+  {
+    "op": "key",
+    "key": "f"
+  },
+  {
+    "op": "click",
+    "button": 1
+  },
+  {
+    "op": "wait",
+    "seconds": 0.5
+  },
+  {
+    "op": "carry_server_assert"
+  },
+  {
+    "op": "key",
+    "key": "Escape"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.5
+  },
+  {
+    "op": "carry_assert",
+    "focused": false,
+    "virtual": false,
+    "held": false,
+    "source": "17"
+  },
+  {
+    "op": "carry_server_assert"
+  },
+  {
+    "op": "carry_move",
+    "target": "35"
+  },
+  {
+    "op": "wait",
+    "seconds": 1
+  },
+  {
+    "op": "carry_assert",
+    "focused": false,
+    "virtual": false,
+    "source": "35",
+    "count": 1,
+    "curios_loaded": false
+  },
+  {
+    "op": "key",
+    "key": "k"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.6
+  },
+  {
+    "op": "carry_assert",
+    "focused": true,
+    "virtual": true,
+    "held": true,
+    "source": "35"
+  },
+  {
+    "op": "screenshot",
+    "name": "carried-35"
+  },
+  {
+    "op": "key",
+    "key": "q"
+  },
+  {
+    "op": "key",
+    "key": "f"
+  },
+  {
+    "op": "click",
+    "button": 1
+  },
+  {
+    "op": "wait",
+    "seconds": 0.5
+  },
+  {
+    "op": "carry_server_assert"
+  },
+  {
+    "op": "key",
+    "key": "Escape"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.5
+  },
+  {
+    "op": "carry_assert",
+    "focused": false,
+    "virtual": false,
+    "held": false,
+    "source": "35"
+  },
+  {
+    "op": "carry_server_assert"
+  },
+  {
+    "op": "carry_move",
+    "target": "offhand"
+  },
+  {
+    "op": "wait",
+    "seconds": 1
+  },
+  {
+    "op": "carry_assert",
+    "focused": false,
+    "virtual": false,
+    "source": "offhand",
+    "count": 1,
+    "curios_loaded": false
+  },
+  {
+    "op": "key",
+    "key": "k"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.6
+  },
+  {
+    "op": "carry_assert",
+    "focused": true,
+    "virtual": true,
+    "held": true,
+    "source": "offhand"
+  },
+  {
+    "op": "screenshot",
+    "name": "carried-offhand"
+  },
+  {
+    "op": "key",
+    "key": "q"
+  },
+  {
+    "op": "key",
+    "key": "f"
+  },
+  {
+    "op": "click",
+    "button": 1
+  },
+  {
+    "op": "wait",
+    "seconds": 0.5
+  },
+  {
+    "op": "carry_server_assert"
+  },
+  {
+    "op": "key",
+    "key": "Escape"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.5
+  },
+  {
+    "op": "carry_assert",
+    "focused": false,
+    "virtual": false,
+    "held": false,
+    "source": "offhand"
+  },
+  {
+    "op": "carry_server_assert"
+  },
+  {
+    "op": "key",
+    "key": "j"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.7
+  },
+  {
+    "op": "carry_assert",
+    "focused": true,
+    "virtual": true,
+    "app": "wflib:terminal"
+  },
+  {
+    "op": "pointer",
+    "x": 192,
+    "y": 220
+  },
+  {
+    "op": "click"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.4
+  },
+  {
+    "op": "text",
+    "text": "k"
+  },
+  {
+    "op": "assert_text",
+    "text": "k"
+  },
+  {
+    "op": "carry_assert",
+    "focused": true,
+    "keyboard_focused": true
+  },
+  {
+    "op": "key",
+    "key": "Escape"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.4
+  },
+  {
+    "op": "carry_assert",
+    "focused": true,
+    "keyboard_focused": false
+  },
+  {
+    "op": "key",
+    "key": "Escape"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.4
+  },
+  {
+    "op": "carry_assert",
+    "focused": false,
+    "virtual": false
+  },
+  {
+    "op": "key",
+    "key": "h"
+  },
+  {
+    "op": "wait",
+    "seconds": 1
+  },
+  {
+    "op": "carry_assert",
+    "focused": true,
+    "app": "pluginless:pluginless"
+  },
+  {
+    "op": "key",
+    "key": "2"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.5
+  },
+  {
+    "op": "carry_assert",
+    "focused": false,
+    "virtual": false,
+    "selected": 1
+  },
+  {
+    "op": "carry_server_assert"
+  },
+  {
+    "op": "key",
+    "key": "k"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.6
+  },
+  {
+    "op": "carry_assert",
+    "focused": true,
+    "virtual": true
+  },
+  {
+    "op": "click",
+    "button": 3
+  },
+  {
+    "op": "wait",
+    "seconds": 0.5
+  },
+  {
+    "op": "carry_assert",
+    "focused": false,
+    "virtual": false
+  },
+  {
+    "op": "carry_server_assert"
+  },
+  {
+    "op": "key",
+    "key": "k"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.5
+  },
+  {
+    "op": "key",
+    "key": "e"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.6
+  },
+  {
+    "op": "carry_assert",
+    "focused": false,
+    "virtual": false
+  },
+  {
+    "op": "key",
+    "key": "j"
+  },
+  {
+    "op": "key",
+    "key": "Escape"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.6
+  },
+  {
+    "op": "carry_assert",
+    "focused": false,
+    "virtual": false
+  },
+  {
+    "op": "key",
+    "key": "k"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.6
+  },
+  {
+    "op": "carry_move",
+    "target": "none"
+  },
+  {
+    "op": "wait",
+    "seconds": 1
+  },
+  {
+    "op": "carry_assert",
+    "focused": false,
+    "virtual": false,
+    "carried": false,
+    "count": 0
+  },
+  {
+    "op": "key",
+    "key": "k"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.5
+  },
+  {
+    "op": "carry_assert",
+    "focused": false,
+    "carried": false
+  },
+  {
+    "op": "carry_server_assert"
+  }
+]

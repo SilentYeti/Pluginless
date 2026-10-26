@@ -1,0 +1,271 @@
+[
+  {
+    "op": "carry_bind",
+    "toggle": "key.keyboard.k",
+    "terminal": "key.keyboard.j",
+    "pluginless": "key.keyboard.h",
+    "require_unbound": true
+  },
+  {
+    "op": "key",
+    "key": "Escape"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.5
+  },
+  {
+    "op": "carry_move",
+    "target": "curios:charm"
+  },
+  {
+    "op": "wait",
+    "seconds": 1.5
+  },
+  {
+    "op": "carry_assert",
+    "curios_loaded": true,
+    "source": "curios:charm",
+    "focused": false,
+    "count": 1
+  },
+  {
+    "op": "key",
+    "key": "j"
+  },
+  {
+    "op": "wait",
+    "seconds": 1
+  },
+  {
+    "op": "carry_assert",
+    "source": "curios:charm",
+    "focused": true,
+    "virtual": true,
+    "app": "wflib:terminal"
+  },
+  {
+    "op": "screenshot",
+    "name": "curios-charm"
+  },
+  {
+    "op": "key",
+    "key": "q"
+  },
+  {
+    "op": "key",
+    "key": "f"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.5
+  },
+  {
+    "op": "carry_server_assert"
+  },
+  {
+    "op": "key",
+    "key": "Escape"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.5
+  },
+  {
+    "op": "carry_assert",
+    "source": "curios:charm",
+    "focused": false,
+    "virtual": false
+  },
+  {
+    "op": "screenshot",
+    "name": "curios-charm-lowered"
+  },
+  {
+    "op": "carry_server_assert"
+  },
+  {
+    "op": "key",
+    "key": "h"
+  },
+  {
+    "op": "wait",
+    "seconds": 1
+  },
+  {
+    "op": "carry_assert",
+    "source": "curios:charm",
+    "focused": true,
+    "virtual": true,
+    "app": "pluginless:pluginless"
+  },
+  {
+    "op": "key",
+    "key": "k"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.5
+  },
+  {
+    "op": "carry_assert",
+    "source": "curios:charm",
+    "focused": false,
+    "virtual": false
+  },
+  {
+    "op": "screenshot",
+    "name": "curios-charm-lowered"
+  },
+  {
+    "op": "carry_server_assert"
+  },
+  {
+    "op": "carry_move",
+    "target": "curios:pda"
+  },
+  {
+    "op": "wait",
+    "seconds": 1.5
+  },
+  {
+    "op": "carry_assert",
+    "curios_loaded": true,
+    "source": "curios:pda",
+    "focused": false,
+    "count": 1
+  },
+  {
+    "op": "key",
+    "key": "j"
+  },
+  {
+    "op": "wait",
+    "seconds": 1
+  },
+  {
+    "op": "carry_assert",
+    "source": "curios:pda",
+    "focused": true,
+    "virtual": true,
+    "app": "wflib:terminal"
+  },
+  {
+    "op": "screenshot",
+    "name": "curios-pda"
+  },
+  {
+    "op": "key",
+    "key": "q"
+  },
+  {
+    "op": "key",
+    "key": "f"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.5
+  },
+  {
+    "op": "carry_server_assert"
+  },
+  {
+    "op": "key",
+    "key": "Escape"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.5
+  },
+  {
+    "op": "carry_assert",
+    "source": "curios:pda",
+    "focused": false,
+    "virtual": false
+  },
+  {
+    "op": "screenshot",
+    "name": "curios-pda-lowered"
+  },
+  {
+    "op": "carry_server_assert"
+  },
+  {
+    "op": "key",
+    "key": "h"
+  },
+  {
+    "op": "wait",
+    "seconds": 1
+  },
+  {
+    "op": "carry_assert",
+    "source": "curios:pda",
+    "focused": true,
+    "virtual": true,
+    "app": "pluginless:pluginless"
+  },
+  {
+    "op": "key",
+    "key": "k"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.5
+  },
+  {
+    "op": "carry_assert",
+    "source": "curios:pda",
+    "focused": false,
+    "virtual": false
+  },
+  {
+    "op": "screenshot",
+    "name": "curios-pda-lowered"
+  },
+  {
+    "op": "carry_server_assert"
+  },
+  {
+    "op": "key",
+    "key": "k"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.6
+  },
+  {
+    "op": "carry_assert",
+    "focused": true,
+    "virtual": true,
+    "alive": true
+  },
+  {
+    "op": "carry_kill"
+  },
+  {
+    "op": "wait",
+    "seconds": 1.5
+  },
+  {
+    "op": "carry_assert",
+    "focused": false,
+    "virtual": false,
+    "alive": false
+  },
+  {
+    "op": "carry_disconnect"
+  },
+  {
+    "op": "wait",
+    "seconds": 1
+  },
+  {
+    "op": "carry_assert",
+    "focused": false,
+    "virtual": false,
+    "carried": false,
+    "count": 0,
+    "selected": -1
+  }
+]

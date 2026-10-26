@@ -13,6 +13,7 @@ neoForge {
                 programArgument '--nogui'
             } else {
                 client()
+                if (project.hasProperty('pdaTheme')) systemProperty 'wflib.pda.theme', project.property('pdaTheme')
                 programArguments.addAll('--username', 'PdaTester', '--quickPlayMultiplayer', "127.0.0.1:${project.property('port')}", '--width', '1280', '--height', '800')
             }
             gameDirectory = file(project.property('gameDir'))
@@ -24,6 +25,7 @@ neoForge {
     mods { pdaharness { sourceSet sourceSets.main } }
 }
 dependencies {
+    if (project.hasProperty('curiosJar')) runtimeOnly files(project.property('curiosJar'))
     compileOnly files(project.property('gemrenderJar'))
     implementation files(project.property('pluginlessJar'), project.property('wflibJar'))
     implementation files(project.property('ahfJar'), project.property('ldlibJar'))

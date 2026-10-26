@@ -111,3 +111,37 @@ To select a different combined build, use `--pluginless-jar /path/to/versions/1.
 For initial setup elsewhere, provide `--instance /path/to/a/new/instance`, `--pluginless-jar ...` and optionally `--seed-world /path/to/a/stopped/harness/server/world`. The helper refuses unmarked existing instances, unmanaged mod collisions and overwriting an existing world. Refreshing a marked instance preserves options, launcher settings and played saves.
 
 Prism's [official CLI documentation](https://www.prismlauncher.org/wiki/getting-started/command-line-interface/) describes `--launch` and instance folder IDs.
+
+## Carried PDA / optional Curios checks
+
+Build the WFLib carried-PDA branch first, then run the scenarios one at a time:
+
+```sh
+python3 tools/pda/run.py --skip-build --wflib /path/to/WFLib \
+  --apps wflib:terminal --script tools/pda/scenarios/carried-pda.json
+python3 tools/pda/run.py --skip-build --wflib /path/to/WFLib \
+  --curios-jar /path/to/curios-neoforge-9.5.1+1.21.1.jar --curios-slots \
+  --apps wflib:terminal --script tools/pda/scenarios/carried-pda-curios.json
+```
+
+`--curios-jar` snapshots and loads that optional jar in both games and records its hash.
+`--curios-slots` creates a disposable-world datapack enabling charm and pda slots;
+it never changes a real world's slots. The default WFLib charm tag and the test
+pack's pda tag are checked with the real Curios slot validation API before equipping.
+`--pda-theme ID` passes `-Dwflib.pda.theme=ID` to the disposable client only for theme tests.
+
+The dev-only `carry_move` op moves the server's PDA into a specified inventory index,
+`offhand`, `curios:charm`, `curios:pda`, or `none`, and adds a UUID token to its custom
+data. It seeds a sword/shield in the physical hands and records the complete inventory
+and equipped-Curios stacks. `carry_server_assert` compares item/count/components with
+that baseline and checks actual server Terminal access. `carry_bind` binds the three
+registered Controls mappings (optionally requiring their default unbound state);
+`carry_assert` checks client focus, virtual/main-hand presentation, physical held
+state, source slot, count and the server's UUID token. New feature methods are called
+reflectively so ordinary baseline text/theme smoke runs still compile without them.
+The scripts use real X11 key/mouse events to trigger the mappings and suppression.
+
+Coordinate the validation lane before starting. The runner also refuses startup if
+it sees a live Java pdaharness game or the selftest listener on localhost:25598.
+This is a preflight safeguard; workers must still agree run order to avoid launch races.
+Use `--no-daemon` for builds and never stop shared Gradle daemons.
