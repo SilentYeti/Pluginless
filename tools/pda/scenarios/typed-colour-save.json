@@ -1,0 +1,132 @@
+[
+  {
+    "op": "pointer",
+    "x": 333,
+    "y": 122
+  },
+  {
+    "op": "wait",
+    "seconds": 0.4
+  },
+  {
+    "op": "click"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.4
+  },
+  {
+    "op": "wait",
+    "seconds": 1
+  },
+  {
+    "op": "assert_page",
+    "page": "cosmetics",
+    "values": {
+      "namecolor_allowed": true
+    }
+  },
+  {
+    "op": "pointer",
+    "x": 100,
+    "y": 141
+  },
+  {
+    "op": "wait",
+    "seconds": 0.4
+  },
+  {
+    "op": "click"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.4
+  },
+  {
+    "op": "text",
+    "text": "#112233"
+  },
+  {
+    "op": "assert_text",
+    "text": "#112233"
+  },
+  {
+    "op": "key",
+    "key": "ctrl+a"
+  },
+  {
+    "op": "assert_text",
+    "text": "#112233"
+  },
+  {
+    "op": "key",
+    "key": "ctrl+c"
+  },
+  {
+    "op": "assert_text",
+    "text": "#112233"
+  },
+  {
+    "op": "key",
+    "key": "ctrl+x"
+  },
+  {
+    "op": "assert_text",
+    "text": ""
+  },
+  {
+    "op": "key",
+    "key": "ctrl+v"
+  },
+  {
+    "op": "assert_text",
+    "text": "#112233"
+  },
+  {
+    "op": "key",
+    "key": "ctrl+a"
+  },
+  {
+    "op": "text",
+    "text": "#ff8800"
+  },
+  {
+    "op": "assert_text",
+    "text": "#ff8800"
+  },
+  {
+    "op": "pointer",
+    "x": 60,
+    "y": 181
+  },
+  {
+    "op": "wait",
+    "seconds": 0.4
+  },
+  {
+    "op": "click"
+  },
+  {
+    "op": "wait",
+    "seconds": 0.4
+  },
+  {
+    "op": "wait",
+    "seconds": 1.2
+  },
+  {
+    "op": "assert_result",
+    "ok": true
+  },
+  {
+    "op": "assert_page",
+    "page": "cosmetics",
+    "values": {
+      "color": "#ff8800"
+    }
+  },
+  {
+    "op": "screenshot",
+    "name": "typed-colour-saved"
+  }
+]

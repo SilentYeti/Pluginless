@@ -145,3 +145,14 @@ Coordinate the validation lane before starting. The runner also refuses startup 
 it sees a live Java pdaharness game or the selftest listener on localhost:25598.
 This is a preflight safeguard; workers must still agree run order to avoid launch races.
 Use `--no-daemon` for builds and never stop shared Gradle daemons.
+
+For typed-entry branches using WFLib TextBox, `assert_text` accepts both TextBox
+and the original TextLine model and captures `failed-text-ID.png` with the actual
+text on a mismatch. `assert_result` checks the latest Pluginless action result
+(`ok`, optionally `contains`) so a screenshot alone cannot pass a failed action.
+`scenarios/typed-bank-payment.json` tests an exact typed $0.50 transfer to the
+seeded seller; `scenarios/typed-colour-save.json` tests select/copy/cut/paste and
+saving a typed hex colour. Use `--ranks tools/pda/fixtures/cosmetics.json` for the
+colour scenario and select the typed-entry Pluginless jar with `--pluginless-jar`
+and the corresponding TextBox WFLib checkout with `--wflib`; these scenarios
+require those feature branches and do not replace full composed-build validation.

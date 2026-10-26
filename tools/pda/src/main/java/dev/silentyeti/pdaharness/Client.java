@@ -79,10 +79,27 @@ public final class Client {
                 }
                 case "assert_text" -> {
                     var focused = com.wf.wflib.ui.input.UiKeyboard.focused();
-                    if (!(focused instanceof com.wf.wflib.ui.input.TextLine line)
-                            || !line.text().toString().equals(command.get("text").getAsString())) {
-                        throw new IllegalStateException("PDA text field does not contain expected text");
+                    // TextBox is optional in baseline WFLib; both public text models expose text().
+                    String actual = focused == null ? "<no focused field>"
+                            : focused.getClass().getMethod("text").invoke(focused).toString();
+                    if (focused == null || !actual.equals(command.get("text").getAsString())) {
+                        int receipt = id;
+                        String error = "Expected field text " + command.get("text") + ", got " + actual;
+                        Screenshot.grab(mc.gameDirectory, "failed-text-" + id + ".png", mc.getMainRenderTarget(),
+                                message -> mc.execute(() -> Harness.write("result-" + receipt + ".json",
+                                        Map.of("ok", false, "error", error))));
+                        return;
                     }
+                }
+                case "assert_result" -> {
+                    var state = Class.forName("com.silentyeti.pluginless.pda.PdaClientState");
+                    boolean ok = (boolean) state.getMethod("messageOk").invoke(null);
+                    String message = (String) state.getMethod("message").invoke(null);
+                    if (message.isEmpty() || ok != command.get("ok").getAsBoolean()
+                            || command.has("contains") && !message.contains(command.get("contains").getAsString()))
+                        throw new IllegalStateException("Unexpected PDA result: ok=" + ok + ", message=" + message);
+                    Harness.write("result-" + id + ".json", Map.of("ok", true, "action_ok", ok, "message", message));
+                    return;
                 }
                 case "assert_page" -> {
                     if (!PdaClient.focused() || PdaClient.app() == null

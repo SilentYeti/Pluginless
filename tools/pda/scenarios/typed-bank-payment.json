@@ -1,0 +1,89 @@
+[
+  {
+    "op": "pointer",
+    "x": 51,
+    "y": 74
+  },
+  {
+    "op": "click"
+  },
+  {
+    "op": "wait",
+    "seconds": 1
+  },
+  {
+    "op": "assert_page",
+    "page": "bank",
+    "values": {
+      "balance": 2500000
+    }
+  },
+  {
+    "op": "pointer",
+    "x": 90,
+    "y": 81
+  },
+  {
+    "op": "click"
+  },
+  {
+    "op": "text",
+    "text": "harness_seller"
+  },
+  {
+    "op": "assert_text",
+    "text": "harness_seller"
+  },
+  {
+    "op": "pointer",
+    "x": 54,
+    "y": 49
+  },
+  {
+    "op": "click"
+  },
+  {
+    "op": "key",
+    "key": "ctrl+a"
+  },
+  {
+    "op": "text",
+    "text": "0.5"
+  },
+  {
+    "op": "assert_text",
+    "text": "0.5"
+  },
+  {
+    "op": "key",
+    "key": "Return"
+  },
+  {
+    "op": "pointer",
+    "x": 20,
+    "y": 207
+  },
+  {
+    "op": "click"
+  },
+  {
+    "op": "wait",
+    "seconds": 1.2
+  },
+  {
+    "op": "assert_result",
+    "ok": true,
+    "contains": "harness_seller"
+  },
+  {
+    "op": "assert_page",
+    "page": "bank",
+    "values": {
+      "balance": 2499950
+    }
+  },
+  {
+    "op": "screenshot",
+    "name": "typed-pay-success"
+  }
+]
