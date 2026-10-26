@@ -132,14 +132,14 @@ final class CosmeticsClientPage implements PdaClientPage {
     private WidgetDef button(float width, float height, String label, String enabled, UiAction action) {
         return new Button(action, enabled, PdaShell.PANEL, PdaShell.HOVER, PdaShell.PRESS, PdaShell.EDGE,
                 1, 0, 3, 2, width, height, Point.CENTER,
-                new com.wf.wflib.ui.widget.Text(label, PdaShell.TEXT, false, "1", Float.toString(width - 8)));
+                PdaWidgets.fit(label, PdaShell.TEXT, width - 8));
     }
 
     private WidgetDef tabButton(String label, UiAction action, boolean selected) {
         return new Button(action, "true", selected ? PdaShell.PRESS : PdaShell.PANEL,
                 PdaShell.HOVER, PdaShell.PRESS, selected ? PdaShell.ACCENT : PdaShell.EDGE,
                 1, 0, 4, 2, 70, 20, Point.CENTER,
-                new com.wf.wflib.ui.widget.Text(label, selected ? PdaShell.ACCENT : PdaShell.TEXT, false, "1", "62"));
+                PdaWidgets.fit(label, selected ? PdaShell.ACCENT : PdaShell.TEXT, 62));
     }
 
     public WidgetDef build() {
@@ -161,7 +161,7 @@ final class CosmeticsClientPage implements PdaClientPage {
         return stack(
                 at("8", "6", text("PREVIEW", PdaShell.DIM)), at("62", "6", clip(308, 12, previewWidget())),
                 at("8", "24", row(4, tabs.toArray(WidgetDef[]::new))),
-                at("8", "51", new com.wf.wflib.ui.widget.Text("{pda_pl.cos_lock}", PdaShell.DIM, false, "1", "366")),
+                at("8", "51", PdaWidgets.wrap("{pda_pl.cos_lock}", PdaShell.DIM, 366, 2)),
                 when("pda_pl.cos_tab == 0", stack(
                         at("8", "70", row(3, swatches.toArray(WidgetDef[]::new))),
                         at("8", "98", button(192, 22, "CUSTOM: {pda_pl.cos_color}", "true", item -> prompt("Name colour (#rrggbb or &a)", 8, value("color", color), input -> {
@@ -191,7 +191,7 @@ final class CosmeticsClientPage implements PdaClientPage {
                         at("8", "174", button(100, 18, "APPLY TITLE", "pda_pl.cos_title_apply", item -> send("title", value("title", title).isEmpty() ? "off" : value("title", title)))))),
                 when("pda_pl.cos_tab == 4", stack(
                         at("8", "68", button(242, 20, "{pda_pl.cos_price}", "pda_pl.cos_skull_allowed", item -> send("skull"))),
-                        at("8", "94", new com.wf.wflib.ui.widget.Text("{pda_pl.cos_hat}", PdaShell.DIM, false, "1", "366")),
+                        at("8", "94", PdaWidgets.wrap("{pda_pl.cos_hat}", PdaShell.DIM, 366, 2)),
                         at("8", "108", grid("pda_pl.cos_slots", 9, 2, slot)),
                         at("8", "174", button(148, 16, "WEAR SELECTED AS HAT", "pda_pl.cos_wear", item -> PdaClientSetup.send(id(), "hat", List.of(), selectedSlot))),
                         at("164", "178", text("Helmet slot must be empty.", PdaShell.DIM)))));

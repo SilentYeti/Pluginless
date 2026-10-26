@@ -15,7 +15,9 @@ import java.util.List;
  * in a box over everything else. Texts queue themselves while drawing; this widget is the last thing the app draws.
  */
 record TextTip() implements WidgetDef {
-    private static final float WIDTH = 230;
+    private static final float WIDTH = 340;
+    /** As many lines as the page has room for; a text longer than that ends in "..." inside the box. */
+    private static final int MAX_LINES = 24;
     private static final int BACK = 0xF0202220;
     private static final int EDGE = 0xFFA9D46C;
     private static final int TEXT = 0xFFD2D6CC;
@@ -53,7 +55,7 @@ record TextTip() implements WidgetDef {
                     AT.clear();
                 }
                 Canvas canvas = ev.canvas;
-                List<String> lines = TextFit.layout(canvas, full, WIDTH - 8, 12);
+                List<String> lines = TextFit.layout(canvas, full, WIDTH - 8, MAX_LINES);
                 float widest = 0;
                 for (String line : lines) {
                     widest = Math.max(widest, canvas.width(line));

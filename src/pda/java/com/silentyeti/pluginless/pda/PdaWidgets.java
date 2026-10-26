@@ -58,9 +58,9 @@ public final class PdaWidgets {
     public static WidgetDef row(String template, float width, String selected, UiAction action) {
         return when(selected,
                 new Button(action, "true", PdaShell.PRESS, PdaShell.HOVER, PdaShell.PRESS, PdaShell.ACCENT,
-                        1, 0, 4, 1, width, 11, Point.LEFT, new com.wf.wflib.ui.widget.Text(template, PdaShell.ACCENT, false, "1", Float.toString(width - 8))),
+                        1, 0, 4, 1, width, 11, Point.LEFT, fit(template, PdaShell.ACCENT, width - 8)),
                 new Button(action, "true", PdaShell.PANEL, PdaShell.HOVER, PdaShell.PRESS, PdaShell.PANEL,
-                        1, 0, 4, 1, width, 11, Point.LEFT, new com.wf.wflib.ui.widget.Text(template, PdaShell.TEXT, false, "1", Float.toString(width - 8))));
+                        1, 0, 4, 1, width, 11, Point.LEFT, fit(template, PdaShell.TEXT, width - 8)));
     }
 
     /** A bordered panel with a dim title; callers place their own content with absolute coordinates. */
