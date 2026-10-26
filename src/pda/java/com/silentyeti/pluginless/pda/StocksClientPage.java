@@ -20,7 +20,9 @@ import static com.wf.wflib.ui.Ui.bar;
 import static com.wf.wflib.ui.Ui.list;
 import static com.wf.wflib.ui.Ui.row;
 import static com.wf.wflib.ui.Ui.stack;
-import static com.wf.wflib.ui.Ui.text;
+import static com.silentyeti.pluginless.pda.PdaWidgets.fit;
+import static com.silentyeti.pluginless.pda.PdaWidgets.text;
+import static com.silentyeti.pluginless.pda.PdaWidgets.wrap;
 import static com.wf.wflib.ui.Ui.when;
 
 /**
@@ -97,29 +99,30 @@ final class StocksClientPage implements PdaClientPage {
         Signals.bool(STK, "tab_margin", s -> tab == 1);
         Signals.bool(STK, "tab_shorts", s -> tab == 2);
         Signals.bool(STK, "tab_shares", s -> tab == 3);
-        Signals.text(STK, "portfolio", 28, s -> "HOLDINGS " + money(holdings()));
+        Signals.text(STK, "portfolio", PdaWidgets.TEXT_MAX, s -> "HOLDINGS " + money(holdings()));
         Signals.items(STK, "stocks", s -> stocks(), STOCK);
         Signals.items(STK, "positions", s -> positions(), POSITION);
         Signals.bool(STK, "no_positions", s -> positions().isEmpty());
-        Signals.text(STK, "title", 32, s -> ticker().isEmpty() ? "NO STOCKS" : ticker() + "  " + shorten(PdaClientState.text(view(), "description"), 24));
-        Signals.text(STK, "quote", 48, s -> "BUY " + money(number("buy")) + "  SELL " + money(number("sell")) + (frozen() ? "  HALTED" : ""));
-        Signals.text(STK, "held", 48, s -> "YOU HOLD " + heldOf(ticker()) + " OF " + number("limit") + "   COST " + money(number("buy") * COUNT.count));
-        Signals.text(STK, "last", 24, s -> {
+        Signals.text(STK, "title", PdaWidgets.TEXT_MAX, s -> ticker().isEmpty() ? "NO STOCKS" : ticker() + "  " + stockName());
+        Signals.text(STK, "about", PdaWidgets.TEXT_MAX, s -> PdaClientState.text(view(), "description"));
+        Signals.text(STK, "quote", PdaWidgets.TEXT_MAX, s -> "BUY " + money(number("buy")) + "  SELL " + money(number("sell")) + (frozen() ? "  HALTED" : ""));
+        Signals.text(STK, "held", PdaWidgets.TEXT_MAX, s -> "YOU HOLD " + heldOf(ticker()) + " OF " + number("limit") + "   COST " + money(number("buy") * COUNT.count));
+        Signals.text(STK, "last", PdaWidgets.TEXT_MAX, s -> {
             var chart = array(view(), "chart");
             return chart.isEmpty() ? "" : "NOW " + money(chart.get(chart.size() - 1).getAsLong());
         });
         Signals.bool(STK, "can_buy", s -> !ticker().isEmpty() && !frozen() && heldOf(ticker()) + COUNT.count <= number("limit"));
         Signals.bool(STK, "can_sell", s -> !ticker().isEmpty() && !frozen() && heldOf(ticker()) >= COUNT.count);
         // margin
-        Signals.text(STK, "m_summary", 60, s -> {
+        Signals.text(STK, "m_summary", PdaWidgets.TEXT_MAX, s -> {
             var m = object(view(), "margin");
             return "HOLDINGS " + money(holdings()) + "  LOAN " + money(PdaClientState.number(m, "loan")) + "  MAX " + money(PdaClientState.number(m, "limit"));
         });
-        Signals.text(STK, "m_rules", 60, s -> {
+        Signals.text(STK, "m_rules", PdaWidgets.TEXT_MAX, s -> {
             var m = object(view(), "margin");
             return decimal(m, "multiple") + "X  INTEREST " + decimal(m, "interest") + "%/DAY  WARN " + decimal(m, "warn") + "X  SELL-OFF " + decimal(m, "liquidate") + "X";
         });
-        Signals.text(STK, "m_health", 40, s -> PdaClientState.number(object(view(), "margin"), "loan") <= 0 ? "NO LOAN" : String.format("HEALTH %.2fX", health()));
+        Signals.text(STK, "m_health", PdaWidgets.TEXT_MAX, s -> PdaClientState.number(object(view(), "margin"), "loan") <= 0 ? "NO LOAN" : String.format("HEALTH %.2fX", health()));
         Signals.num(STK, "health", s -> Math.max(0, Math.min(1, health() - 1)));
         Signals.bool(STK, "h_ok", s -> health() == 0 || health() >= decimal(object(view(), "margin"), "warn"));
         Signals.bool(STK, "h_warn", s -> health() > 0 && health() < decimal(object(view(), "margin"), "warn") && health() >= decimal(object(view(), "margin"), "liquidate"));
@@ -127,11 +130,11 @@ final class StocksClientPage implements PdaClientPage {
         Signals.bool(STK, "can_borrow", s -> BAR.amount > 0 && PdaClientState.number(object(view(), "margin"), "limit") > PdaClientState.number(object(view(), "margin"), "loan"));
         Signals.bool(STK, "can_repay", s -> BAR.amount > 0 && PdaClientState.number(object(view(), "margin"), "loan") > 0);
         // shorts
-        Signals.text(STK, "s_rules", 60, s -> {
+        Signals.text(STK, "s_rules", PdaWidgets.TEXT_MAX, s -> {
             var sh = object(view(), "shorts");
             return "DEPOSIT " + Math.round(decimal(sh, "deposit") * 100) + "%  CLOSED AT " + Math.round(decimal(sh, "close") * 100) + "% LOST  FEE " + decimal(sh, "fee") + "%/DAY";
         });
-        Signals.text(STK, "s_new", 60, s -> "SHORT " + ticker() + " X" + COUNT.count + "  DEPOSIT ABOUT "
+        Signals.text(STK, "s_new", PdaWidgets.TEXT_MAX, s -> "SHORT " + ticker() + " X" + COUNT.count + "  DEPOSIT ABOUT "
                 + money(Math.round(decimal(object(view(), "shorts"), "deposit") * number("sell") * COUNT.count)));
         Signals.bool(STK, "can_open", s -> !ticker().isEmpty() && !frozen());
         Signals.bool(STK, "can_close", s -> !selectedPosition.isEmpty());
@@ -140,21 +143,21 @@ final class StocksClientPage implements PdaClientPage {
         Signals.items(STK, "orders", s -> orders(), ORDER);
         Signals.bool(STK, "no_firms", s -> firms().isEmpty());
         Signals.bool(STK, "no_orders", s -> orders().isEmpty());
-        Signals.text(STK, "c_title", 40, s -> company.isEmpty() ? "SELECT A COMPANY" : company);
-        Signals.text(STK, "c_held", 60, s -> company.isEmpty() ? "" : "YOU HOLD " + PdaClientState.number(firm(), "held") + " OF " + PdaClientState.number(firm(), "outstanding")
+        Signals.text(STK, "c_title", PdaWidgets.TEXT_MAX, s -> company.isEmpty() ? "SELECT A COMPANY" : company);
+        Signals.text(STK, "c_held", PdaWidgets.TEXT_MAX, s -> company.isEmpty() ? "" : "YOU HOLD " + PdaClientState.number(firm(), "held") + " OF " + PdaClientState.number(firm(), "outstanding")
                 + " SHARES, VOTES " + PdaClientState.number(firm(), "votes"));
-        Signals.text(STK, "c_book", 60, s -> company.isEmpty() ? "" : "ASK " + level("ask") + "  BID " + level("bid"));
-        Signals.text(STK, "c_total", 48, s -> "PRICE X COUNT " + money(BAR.amount * COUNT.count));
+        Signals.text(STK, "c_book", PdaWidgets.TEXT_MAX, s -> company.isEmpty() ? "" : "ASK " + level("ask") + "  BID " + level("bid"));
+        Signals.text(STK, "c_total", PdaWidgets.TEXT_MAX, s -> "PRICE X COUNT " + money(BAR.amount * COUNT.count));
         Signals.bool(STK, "c_ready", s -> !company.isEmpty() && BAR.amount > 0);
         Signals.bool(STK, "c_takeover", s -> !company.isEmpty() && !flag(firm(), "owner")
                 && PdaClientState.number(firm(), "votes") * 2 > PdaClientState.number(firm(), "outstanding"));
         Signals.bool(STK, "c_owner", s -> !company.isEmpty() && BAR.amount > 0 && flag(firm(), "owner"));
-        Signals.text(FIRM, "label", 40, Firm::label);
+        Signals.text(FIRM, "label", PdaWidgets.TEXT_MAX, Firm::label);
         Signals.bool(FIRM, "selected", Firm::selected);
-        Signals.text(ORDER, "label", 60, Order::label);
-        Signals.text(STOCK, "label", 40, Stock::label);
+        Signals.text(ORDER, "label", PdaWidgets.TEXT_MAX, Order::label);
+        Signals.text(STOCK, "label", PdaWidgets.TEXT_MAX, Stock::label);
         Signals.bool(STOCK, "selected", Stock::selected);
-        Signals.text(POSITION, "label", 60, Position::label);
+        Signals.text(POSITION, "label", PdaWidgets.TEXT_MAX, Position::label);
         Signals.bool(POSITION, "selected", Position::selected);
     }
 
@@ -181,7 +184,7 @@ final class StocksClientPage implements PdaClientPage {
             var row = element.getAsJsonObject();
             var name = PdaClientState.text(row, "name");
             long held = PdaClientState.number(row, "held");
-            result.add(new Firm(name, shorten(name, 14) + (held > 0 ? " X" + held : ""), name.equals(company)));
+            result.add(new Firm(name, name + (held > 0 ? " X" + held : ""), name.equals(company)));
         }
         return result;
     }
@@ -191,12 +194,18 @@ final class StocksClientPage implements PdaClientPage {
         for (var element : array(shares(), "orders")) {
             var row = element.getAsJsonObject();
             result.add(new Order(Long.toString(PdaClientState.number(row, "id")), (flag(row, "buy") ? "BUY " : "SELL ") + PdaClientState.number(row, "quantity") + " "
-                    + shorten(PdaClientState.text(row, "company"), 12) + " @" + money(PdaClientState.number(row, "price"))));
+                    + PdaClientState.text(row, "company") + " @" + money(PdaClientState.number(row, "price"))));
         }
         return result;
     }
 
-    private static String shorten(String name, int max) { return name.length() <= max ? name : name.substring(0, max - 1) + "."; }
+    private static String stockName() {
+        for (var element : array(view(), "stocks")) {
+            var row = element.getAsJsonObject();
+            if (PdaClientState.text(row, "ticker").equals(ticker())) return PdaClientState.text(row, "name");
+        }
+        return "";
+    }
 
     private static List<Stock> stocks() {
         var result = new ArrayList<Stock>();
@@ -205,7 +214,7 @@ final class StocksClientPage implements PdaClientPage {
             var t = PdaClientState.text(row, "ticker");
             double move = decimal(row, "move");
             long held = PdaClientState.number(row, "held");
-            result.add(new Stock(t, shorten(t, 6) + " " + money(PdaClientState.number(row, "price")) + (move == 0 ? "" : String.format(" %+.1f%%", move * 100 / Math.max(1, PdaClientState.number(row, "price") / 100.0)))
+            result.add(new Stock(t, t + " " + money(PdaClientState.number(row, "price")) + (move == 0 ? "" : String.format(" %+.1f%%", move * 100 / Math.max(1, PdaClientState.number(row, "price") / 100.0)))
                     + (held > 0 ? " X" + held : ""), t.equals(ticker())));
         }
         return result;
@@ -237,18 +246,19 @@ final class StocksClientPage implements PdaClientPage {
         tree.add(when("pda_pl_stk.tab_market", stack(
                 at(8, 20, list("pda_pl_stk.stocks", 11, 1, "150", "150", PdaShell.EDGE,
                         PdaWidgets.row("{pda_pl_stk_stock.label}", 138, "pda_pl_stk_stock.selected", pick))),
-                at(166, 20, text("{pda_pl_stk.title}", PdaShell.ACCENT)),
+                at(166, 20, fit("{pda_pl_stk.title}", PdaShell.ACCENT, 210)),
                 at(166, 32, new PriceChart(210, 44, () -> array(view(), "chart"), () -> extreme(true), () -> extreme(false))),
-                at(166, 80, text("{pda_pl_stk.quote}", PdaShell.TEXT)),
-                at(166, 92, text("{pda_pl_stk.held}", PdaShell.DIM)),
+                at(166, 80, fit("{pda_pl_stk.quote}", PdaShell.TEXT, 210)),
+                at(166, 92, fit("{pda_pl_stk.held}", PdaShell.DIM, 210)),
+                at(166, 150, wrap("{pda_pl_stk.about}", PdaShell.DIM, 210, 4)),
                 stack(COUNT.widgets(166, 110).toArray(WidgetDef[]::new)),
                 at(166, 128, row(2,
                         button("BUY", "pda_pl_stk.can_buy", () -> PdaClientSetup.send("stocks", "buy", ticker(), Long.toString(COUNT.count))),
                         button("SELL", "pda_pl_stk.can_sell", () -> PdaClientSetup.send("stocks", "sell", ticker(), Long.toString(COUNT.count))))))));
 
         tree.add(when("pda_pl_stk.tab_margin", stack(
-                at(8, 24, text("{pda_pl_stk.m_summary}", PdaShell.TEXT)),
-                at(8, 36, text("{pda_pl_stk.m_rules}", PdaShell.DIM)),
+                at(8, 24, fit("{pda_pl_stk.m_summary}", PdaShell.TEXT, 368)),
+                at(8, 36, fit("{pda_pl_stk.m_rules}", PdaShell.DIM, 368)),
                 at(8, 56, text("{pda_pl_stk.m_health}", PdaShell.TEXT)),
                 when("pda_pl_stk.h_ok", at(8, 68, bar(200, 10, "pda_pl_stk.health", PdaShell.ACCENT, PdaShell.BAR_BACK))),
                 when("pda_pl_stk.h_warn", at(8, 68, bar(200, 10, "pda_pl_stk.health", "#ffd0a040", PdaShell.BAR_BACK))),
@@ -257,14 +267,14 @@ final class StocksClientPage implements PdaClientPage {
                 at(56, 110, button("REPAY", "pda_pl_stk.can_repay", () -> PdaClientSetup.send("stocks", "repay", Long.toString(BAR.amount)))))));
 
         tree.add(when("pda_pl_stk.tab_shorts", stack(
-                at(8, 20, text("{pda_pl_stk.s_rules}", PdaShell.DIM)),
+                at(8, 20, fit("{pda_pl_stk.s_rules}", PdaShell.DIM, 368)),
                 at(8, 34, list("pda_pl_stk.positions", 11, 1, "368", "70", PdaShell.EDGE,
                         PdaWidgets.row("{pda_pl_stk_pos.label}", 356, "pda_pl_stk_pos.selected", pickPosition))),
                 when("pda_pl_stk.no_positions", at(12, 38, text("NO OPEN SHORTS", PdaShell.DIM))),
                 at(8, 110, button("CLOSE SELECTED", "pda_pl_stk.can_close", () -> {
                     if (!selectedPosition.isEmpty()) PdaClientSetup.send("stocks", "close", selectedPosition);
                 })),
-                at(8, 132, text("{pda_pl_stk.s_new}", PdaShell.TEXT)),
+                at(8, 132, fit("{pda_pl_stk.s_new}", PdaShell.TEXT, 368)),
                 stack(COUNT.widgets(8, 146).toArray(WidgetDef[]::new)),
                 at(176, 146, button("OPEN SHORT", "pda_pl_stk.can_open", () -> PdaClientSetup.send("stocks", "open", ticker(), Long.toString(COUNT.count)))))));
 

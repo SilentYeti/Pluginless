@@ -18,7 +18,8 @@ import static com.wf.wflib.ui.Ui.button;
 import static com.wf.wflib.ui.Ui.repeat;
 import static com.wf.wflib.ui.Ui.sized;
 import static com.wf.wflib.ui.Ui.stack;
-import static com.wf.wflib.ui.Ui.text;
+import static com.silentyeti.pluginless.pda.PdaWidgets.fit;
+import static com.silentyeti.pluginless.pda.PdaWidgets.text;
 import static com.wf.wflib.ui.Ui.when;
 
 /** Ranks: where you stand on the track, then perks, kits (claimable) and playtime rewards in three tabs. */
@@ -40,13 +41,13 @@ final class RanksClientPage implements PdaClientPage {
 
     public void signals() {
         Signals.num(PlApp.APP, "rk_tab", app -> tab);
-        Signals.text(PlApp.APP, "rk_head", 56, app -> {
+        Signals.text(PlApp.APP, "rk_head", PdaWidgets.TEXT_MAX, app -> {
             var view = view();
             long seconds = PdaClientState.number(view, "seconds");
             return ("RANK " + PdaClientState.text(view, "rank") + "   PLAYTIME " + hours(seconds)).toUpperCase();
         });
-        Signals.text(PlApp.APP, "rk_track", 72, app -> track());
-        Signals.text(PlApp.APP, "rk_next", 56, app -> next());
+        Signals.text(PlApp.APP, "rk_track", PdaWidgets.TEXT_MAX, app -> track());
+        Signals.text(PlApp.APP, "rk_next", PdaWidgets.TEXT_MAX, app -> next());
         Signals.bool(PlApp.APP, "rk_no_perks", app -> lines("perks").isEmpty());
         Signals.bool(PlApp.APP, "rk_no_kits", app -> lines("kits").isEmpty());
         Signals.bool(PlApp.APP, "rk_no_rewards", app -> lines("rewards").isEmpty());
@@ -54,9 +55,9 @@ final class RanksClientPage implements PdaClientPage {
         Signals.items(PlApp.APP, "rk_kits", app -> lines("kits"), KIT);
         Signals.items(PlApp.APP, "rk_rewards", app -> lines("rewards"), REWARD);
         for (var subject : List.of(PERK, KIT, REWARD)) {
-            Signals.text(subject, "id", 24, Line::id);
-            Signals.text(subject, "detail", 40, Line::detail);
-            Signals.text(subject, "state", 14, Line::state);
+            Signals.text(subject, "id", PdaWidgets.TEXT_MAX, Line::id);
+            Signals.text(subject, "detail", PdaWidgets.TEXT_MAX, Line::detail);
+            Signals.text(subject, "state", PdaWidgets.TEXT_MAX, Line::state);
             Signals.bool(subject, "ready", Line::ready);
         }
     }
@@ -123,7 +124,7 @@ final class RanksClientPage implements PdaClientPage {
         String items = PdaClientState.text(row, "items");
         String text = money > 0 ? PdaClientState.money(view, money) : "";
         if (!items.isEmpty()) text = text.isEmpty() ? items : text + " + " + items;
-        return text.length() > 40 ? text.substring(0, 39) + "." : text;
+        return text;
     }
 
     private static WidgetDef tabButton(int index) {
@@ -144,20 +145,20 @@ final class RanksClientPage implements PdaClientPage {
                 when("pda_pl.rk_tab == 0", at("8", "62", stack(
                         when("pda_pl.rk_no_perks", text("NO PERKS", PdaShell.DIM)),
                         repeat("pda_pl.rk_perks", true, 3, sized(368, 12, stack(
-                                at("0", "0", text("{pda_pl_rk_perk.id}", PdaShell.TEXT)),
+                                at("0", "0", fit("{pda_pl_rk_perk.id}", PdaShell.TEXT, 214)),
                                 at("220", "0", text("{pda_pl_rk_perk.detail}", PdaShell.ACCENT)))))))),
                 when("pda_pl.rk_tab == 1", at("8", "62", stack(
                         when("pda_pl.rk_no_kits", text("NO KITS FOR YOUR RANK", PdaShell.DIM)),
                         repeat("pda_pl.rk_kits", true, 3, sized(368, 16, stack(
-                                at("0", "2", text("{pda_pl_rk_kit.id}", PdaShell.TEXT)),
-                                at("84", "2", text("{pda_pl_rk_kit.detail}", PdaShell.DIM)),
+                                at("0", "2", fit("{pda_pl_rk_kit.id}", PdaShell.TEXT, 78)),
+                                at("84", "2", fit("{pda_pl_rk_kit.detail}", PdaShell.DIM, 172)),
                                 at("262", "2", text("{pda_pl_rk_kit.state}", PdaShell.ACCENT)),
                                 at("320", "0", claimButton))))))),
                 when("pda_pl.rk_tab == 2", at("8", "62", stack(
                         when("pda_pl.rk_no_rewards", text("NO PLAYTIME REWARDS", PdaShell.DIM)),
                         repeat("pda_pl.rk_rewards", true, 3, sized(368, 12, stack(
-                                at("0", "0", text("{pda_pl_rk_reward.id}", PdaShell.TEXT)),
-                                at("84", "0", text("{pda_pl_rk_reward.detail}", PdaShell.DIM)),
+                                at("0", "0", fit("{pda_pl_rk_reward.id}", PdaShell.TEXT, 78)),
+                                at("84", "0", fit("{pda_pl_rk_reward.detail}", PdaShell.DIM, 210)),
                                 at("300", "0", text("{pda_pl_rk_reward.state}", PdaShell.ACCENT)))))))));
     }
 }

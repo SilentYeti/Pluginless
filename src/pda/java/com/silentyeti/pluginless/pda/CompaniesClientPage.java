@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import static com.wf.wflib.ui.Ui.*;
+import static com.silentyeti.pluginless.pda.PdaWidgets.fit;
+import static com.silentyeti.pluginless.pda.PdaWidgets.text;
 import static com.silentyeti.pluginless.pda.PdaWidgets.button;
 
 /** Company and shop panels; all prices, permissions and transactions come back from the server. */
@@ -59,29 +61,29 @@ final class CompaniesClientPage implements PdaClientPage {
             Signals.bool(PlApp.APP, "co_" + key, a -> flag(detail("company"), key));
         for (String key : List.of("edit", "stock"))
             Signals.bool(PlApp.APP, "co_" + key, a -> flag(detail("shop"), key));
-        Signals.text(PlApp.APP, "co_page", 16, a -> num(view(), "page") + "/" + num(view(), "pages"));
-        Signals.text(PlApp.APP, "co_tab", 12, a -> str(view(), "tab").toUpperCase());
-        Signals.text(PlApp.APP, "co_search", 17, a -> str(view(), "search"));
-        Signals.text(PlApp.APP, "co_fee", 24, a -> "FOUNDING: " + money(num(view(), "fee")));
-        Signals.text(PlApp.APP, "co_name", 24, a -> company());
-        Signals.text(PlApp.APP, "co_owner", 36, a -> "OWNER: " + str(detail("company"), "owner"));
-        Signals.text(PlApp.APP, "co_balance", 36, a -> "ACCOUNT: " + money(num(detail("company"), "balance")));
-        Signals.text(PlApp.APP, "co_payroll", 40, a -> {
+        Signals.text(PlApp.APP, "co_page", PdaWidgets.TEXT_MAX, a -> num(view(), "page") + "/" + num(view(), "pages"));
+        Signals.text(PlApp.APP, "co_tab", PdaWidgets.TEXT_MAX, a -> str(view(), "tab").toUpperCase());
+        Signals.text(PlApp.APP, "co_search", PdaWidgets.TEXT_MAX, a -> str(view(), "search"));
+        Signals.text(PlApp.APP, "co_fee", PdaWidgets.TEXT_MAX, a -> "FOUNDING: " + money(num(view(), "fee")));
+        Signals.text(PlApp.APP, "co_name", PdaWidgets.TEXT_MAX, a -> company());
+        Signals.text(PlApp.APP, "co_owner", PdaWidgets.TEXT_MAX, a -> "OWNER: " + str(detail("company"), "owner"));
+        Signals.text(PlApp.APP, "co_balance", PdaWidgets.TEXT_MAX, a -> "ACCOUNT: " + money(num(detail("company"), "balance")));
+        Signals.text(PlApp.APP, "co_payroll", PdaWidgets.TEXT_MAX, a -> {
             var c = detail("company");
             return "PAYROLL " + money(num(c, "wages")) + " " + str(c, "payroll");
         });
-        Signals.text(PlApp.APP, "co_next", 32, a -> "NEXT: " + num(detail("company"), "next") / 60 + " MIN");
-        Signals.text(PlApp.APP, "co_members_page", 24, a -> "MEMBERS " + num(detail("company"), "memberPage") + "/" + num(detail("company"), "memberPages"));
-        Signals.text(PlApp.APP, "co_amount", 24, a -> "AMOUNT: " + amount);
-        Signals.text(PlApp.APP, "co_target", 30, a -> "PLAYER: " + target);
-        Signals.text(PlApp.APP, "co_role", 16, a -> (flag(detail("company"), "own") ? role : "employee").toUpperCase());
-        Signals.text(PlApp.APP, "co_shop_name", 24, a -> shop());
-        Signals.text(PlApp.APP, "co_shop_owner", 36, a -> "OWNER: " + str(detail("shop"), "owner"));
-        Signals.text(PlApp.APP, "co_shop_account", 40, a -> "COMPANY ACCOUNT: " + str(detail("shop"), "earnings"));
-        Signals.text(PlApp.APP, "co_offers_page", 24, a -> "OFFERS " + num(detail("shop"), "offerPage") + "/" + num(detail("shop"), "offerPages"));
-        Signals.text(PlApp.APP, "co_item", 38, a -> item);
-        Signals.text(PlApp.APP, "co_quantity", 24, a -> "QTY: " + quantity);
-        Signals.text(PlApp.APP, "co_prices", 42, a -> "SELL " + sellPrice + " / BUY " + buyPrice + " / LIMIT " + limit);
+        Signals.text(PlApp.APP, "co_next", PdaWidgets.TEXT_MAX, a -> "NEXT: " + num(detail("company"), "next") / 60 + " MIN");
+        Signals.text(PlApp.APP, "co_members_page", PdaWidgets.TEXT_MAX, a -> "MEMBERS " + num(detail("company"), "memberPage") + "/" + num(detail("company"), "memberPages"));
+        Signals.text(PlApp.APP, "co_amount", PdaWidgets.TEXT_MAX, a -> "AMOUNT: " + amount);
+        Signals.text(PlApp.APP, "co_target", PdaWidgets.TEXT_MAX, a -> "PLAYER: " + target);
+        Signals.text(PlApp.APP, "co_role", PdaWidgets.TEXT_MAX, a -> (flag(detail("company"), "own") ? role : "employee").toUpperCase());
+        Signals.text(PlApp.APP, "co_shop_name", PdaWidgets.TEXT_MAX, a -> shop());
+        Signals.text(PlApp.APP, "co_shop_owner", PdaWidgets.TEXT_MAX, a -> "OWNER: " + str(detail("shop"), "owner"));
+        Signals.text(PlApp.APP, "co_shop_account", PdaWidgets.TEXT_MAX, a -> "COMPANY ACCOUNT: " + str(detail("shop"), "earnings"));
+        Signals.text(PlApp.APP, "co_offers_page", PdaWidgets.TEXT_MAX, a -> "OFFERS " + num(detail("shop"), "offerPage") + "/" + num(detail("shop"), "offerPages"));
+        Signals.text(PlApp.APP, "co_item", PdaWidgets.TEXT_MAX, a -> item);
+        Signals.text(PlApp.APP, "co_quantity", PdaWidgets.TEXT_MAX, a -> "QTY: " + quantity);
+        Signals.text(PlApp.APP, "co_prices", PdaWidgets.TEXT_MAX, a -> "SELL " + sellPrice + " / BUY " + buyPrice + " / LIMIT " + limit);
         Signals.items(PlApp.APP, "co_rows", a -> entries(), ENTRY);
         Signals.items(PlApp.APP, "co_members", a -> members(), MEMBER);
         Signals.items(PlApp.APP, "co_offers", a -> offers(), OFFER);
@@ -89,10 +91,10 @@ final class CompaniesClientPage implements PdaClientPage {
         Signals.items(PlApp.APP, "co_history", a -> array(detail("shop"), "history").stream()
                 .map(r -> new Entry("", money(num(r, "amount")), str(r, "reason"))).toList(), HISTORY);
         for (var subject : List.of(ENTRY, MEMBER, OFFER, HISTORY)) {
-            Signals.text(subject, "name", 36, Entry::name);
-            Signals.text(subject, "line", 42, Entry::line);
+            Signals.text(subject, "name", PdaWidgets.TEXT_MAX, Entry::name);
+            Signals.text(subject, "line", PdaWidgets.TEXT_MAX, Entry::line);
         }
-        Signals.text(SLOT, "label", 16, Slot::label);
+        Signals.text(SLOT, "label", PdaWidgets.TEXT_MAX, Slot::label);
     }
 
     private static List<JsonObject> array(JsonObject parent, String key) {
@@ -129,14 +131,14 @@ final class CompaniesClientPage implements PdaClientPage {
     private static WidgetDef entryButton(String subject, UiAction action) {
         return new Button(action, "true", PdaShell.PANEL, PdaShell.HOVER, PdaShell.PRESS, PdaShell.EDGE,
                 1, 0, 4, 3, 240, 28, Point.TOP_LEFT, column(3,
-                text("{" + subject + ".name}", PdaShell.TEXT), text("{" + subject + ".line}", PdaShell.DIM)));
+                fit("{" + subject + ".name}", PdaShell.TEXT, 230), fit("{" + subject + ".line}", PdaShell.DIM, 230)));
     }
 
     public WidgetDef build() {
         WidgetDef entries = list("pda_pl.co_rows", 29, 2, "110", "124", PdaShell.ACCENT,
                 new Button(e -> { item = ""; target = ""; inventorySlot = -1; send("select", ((Entry) e).id()); }, "true",
                         PdaShell.PANEL, PdaShell.HOVER, PdaShell.PRESS, PdaShell.EDGE, 1, 0, 3, 3, 106, 29, Point.TOP_LEFT,
-                        column(3, text("{pda_pl_company_entry.name}", PdaShell.TEXT), text("{pda_pl_company_entry.line}", PdaShell.DIM))));
+                        column(3, fit("{pda_pl_company_entry.name}", PdaShell.TEXT, 98), fit("{pda_pl_company_entry.line}", PdaShell.DIM, 98))));
         WidgetDef members = repeat("pda_pl.co_members", true, 3,
                 entryButton("pda_pl_company_member", e -> target = ((Entry) e).id()));
         WidgetDef offers = repeat("pda_pl.co_offers", true, 3,
@@ -183,7 +185,7 @@ final class CompaniesClientPage implements PdaClientPage {
                         grid("pda_pl.co_inventory", 2, 3, new Button(e -> {
                             var slot = (Slot) e; item = slot.item(); inventorySlot = slot.slot();
                         }, "true", PdaShell.PANEL, PdaShell.HOVER, PdaShell.PRESS, PdaShell.EDGE,
-                                1, 0, 3, 2, 114, 14, Point.TOP_LEFT, text("{pda_pl_shop_slot.label}", PdaShell.TEXT))),
+                                1, 0, 3, 2, 114, 14, Point.TOP_LEFT, fit("{pda_pl_shop_slot.label}", PdaShell.TEXT, 106))),
                         row(4, button("RESTOCK", "pda_pl.co_slot_selected", () -> PdaClientSetup.send("companies", "shop_stock", List.of(shop(), item, quantity), inventorySlot)),
                                 button("UNSTOCK", "pda_pl.co_item_selected", () -> send("shop_unstock", shop(), item, quantity))))),
                 when("pda_pl.co_edit", column(4,

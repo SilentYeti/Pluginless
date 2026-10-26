@@ -16,7 +16,8 @@ import static com.wf.wflib.ui.Ui.button;
 import static com.wf.wflib.ui.Ui.list;
 import static com.wf.wflib.ui.Ui.row;
 import static com.wf.wflib.ui.Ui.stack;
-import static com.wf.wflib.ui.Ui.text;
+import static com.silentyeti.pluginless.pda.PdaWidgets.fit;
+import static com.silentyeti.pluginless.pda.PdaWidgets.text;
 import static com.wf.wflib.ui.Ui.when;
 
 /** Homes, warps, players to teleport to, and the other travel commands. Players only: no warp or spawn editing here. */
@@ -36,17 +37,17 @@ final class QolClientPage implements PdaClientPage {
     public void signals() {
         Signals.num(PlApp.APP, "qol_tab", app -> tab);
         Signals.items(PlApp.APP, "qol_rows", app -> rows(), ENTRY);
-        Signals.text(ENTRY, "name", 24, Entry::name);
-        Signals.text(ENTRY, "detail", 28, Entry::detail);
-        Signals.text(ENTRY, "label", 8, Entry::label);
-        Signals.text(ENTRY, "label2", 8, Entry::secondLabel);
+        Signals.text(ENTRY, "name", PdaWidgets.TEXT_MAX, Entry::name);
+        Signals.text(ENTRY, "detail", PdaWidgets.TEXT_MAX, Entry::detail);
+        Signals.text(ENTRY, "label", PdaWidgets.TEXT_MAX, Entry::label);
+        Signals.text(ENTRY, "label2", PdaWidgets.TEXT_MAX, Entry::secondLabel);
         Signals.bool(ENTRY, "has2", entry -> !entry.second().isEmpty());
-        Signals.text(PlApp.APP, "qol_homes", 24, app -> {
+        Signals.text(PlApp.APP, "qol_homes", PdaWidgets.TEXT_MAX, app -> {
             var view = PdaClientState.view("qol");
             return "HOMES " + (view.has("homes") ? view.getAsJsonArray("homes").size() : 0) + "/" + PdaClientState.number(view, "homeLimit");
         });
         Signals.bool(PlApp.APP, "qol_request", app -> PdaClientState.view("qol").has("request"));
-        Signals.text(PlApp.APP, "qol_request_text", 48, app -> {
+        Signals.text(PlApp.APP, "qol_request_text", PdaWidgets.TEXT_MAX, app -> {
             var view = PdaClientState.view("qol");
             if (!view.has("request")) return "";
             JsonObject request = view.getAsJsonObject("request");
@@ -90,7 +91,7 @@ final class QolClientPage implements PdaClientPage {
 
     public WidgetDef build() {
         var entryRow = stack(
-                at("0", "3", text("{pda_pl_qol.name}", PdaShell.TEXT)),
+                at("0", "3", fit("{pda_pl_qol.name}", PdaShell.TEXT, 94)),
                 at("100", "3", text("{pda_pl_qol.detail}", PdaShell.DIM)),
                 at("250", "0", button(PdaShell.PANEL, PdaShell.HOVER, 4, item -> {
                     var entry = (Entry) item;

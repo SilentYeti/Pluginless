@@ -21,7 +21,9 @@ import static com.wf.wflib.ui.Ui.grid;
 import static com.wf.wflib.ui.Ui.repeat;
 import static com.wf.wflib.ui.Ui.row;
 import static com.wf.wflib.ui.Ui.stack;
-import static com.wf.wflib.ui.Ui.text;
+import static com.silentyeti.pluginless.pda.PdaWidgets.fit;
+import static com.silentyeti.pluginless.pda.PdaWidgets.wrap;
+import static com.silentyeti.pluginless.pda.PdaWidgets.text;
 import static com.wf.wflib.ui.Ui.when;
 
 /** Home: one tile per page with a live line from the server, then the latest notices. History and badge only, no toasts. */
@@ -49,14 +51,14 @@ final class HomeClientPage implements PdaClientPage {
         Signals.items(PlApp.APP, "notes", app -> notes(), NOTE);
         Signals.bool(PlApp.APP, "has_notes", app -> !notes().isEmpty());
         Signals.bool(PlApp.APP, "has_unread", app -> PdaClientState.number(PdaClientState.view("home"), "unread") > 0);
-        Signals.text(TILE, "name", 16, Tile::name);
-        Signals.text(TILE, "line", 20, tile -> tile.ready() ? tile.line() : "SOON");
+        Signals.text(TILE, "name", PdaWidgets.TEXT_MAX, Tile::name);
+        Signals.text(TILE, "line", PdaWidgets.TEXT_MAX, tile -> tile.ready() ? tile.line() : "SOON");
         Signals.bool(TILE, "ready", Tile::ready);
-        Signals.text(NOTE, "clock", 5, Note::clock);
-        Signals.text(NOTE, "text", 56, Note::text);
+        Signals.text(NOTE, "clock", PdaWidgets.TEXT_MAX, Note::clock);
+        Signals.text(NOTE, "text", PdaWidgets.TEXT_MAX, Note::text);
         Signals.bool(NOTE, "unread", Note::unread);
-        Signals.text(PlApp.APP, "rank", 24, app -> PdaClientState.text(PdaClientState.view("home"), "rank").toUpperCase());
-        Signals.text(PlApp.APP, "debt", 24, app -> {
+        Signals.text(PlApp.APP, "rank", PdaWidgets.TEXT_MAX, app -> PdaClientState.text(PdaClientState.view("home"), "rank").toUpperCase());
+        Signals.text(PlApp.APP, "debt", PdaWidgets.TEXT_MAX, app -> {
             var view = PdaClientState.view("home");
             long debt = PdaClientState.number(view, "debt");
             return debt > 0 ? "DEBT " + PdaClientState.money(view, debt) : "";
@@ -89,7 +91,7 @@ final class HomeClientPage implements PdaClientPage {
         UiAction go = item -> PdaClientSetup.open(((Tile) item).page());
         WidgetDef tile = new Button(go, "pda_pl_tile.ready", PdaShell.PANEL, PdaShell.HOVER, PdaShell.PRESS, PdaShell.EDGE,
                 1, 0, 5, 4, TILE_W, TILE_H, Point.TOP_LEFT,
-                column(3, text("{pda_pl_tile.name}", PdaShell.TEXT), text("{pda_pl_tile.line}", PdaShell.DIM)));
+                column(3, fit("{pda_pl_tile.name}", PdaShell.TEXT, 76), fit("{pda_pl_tile.line}", PdaShell.DIM, 76)));
         UiAction read = item -> PdaClientSetup.send("home", "read");
         return stack(
                 at("8", "6", text("{pda_pl.rank}", PdaShell.ACCENT)),

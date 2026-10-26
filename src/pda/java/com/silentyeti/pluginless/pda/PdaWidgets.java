@@ -10,12 +10,29 @@ import net.minecraft.network.chat.Component;
 import java.util.function.Consumer;
 
 import static com.wf.wflib.ui.Ui.stack;
-import static com.wf.wflib.ui.Ui.text;
 import static com.wf.wflib.ui.Ui.when;
 
 /** Small pieces every page uses, so the pages look alike. Coordinates are layout units inside the page area. */
 public final class PdaWidgets {
+    /** Capacity of a text signal: far above any real string, so the signal never cuts text; fitting is done at draw time. */
+    public static final int TEXT_MAX = 1200;
+
     private PdaWidgets() {}
+
+    /** Text to the page edge from where it is placed; ellipsis only if it would run past. */
+    public static WidgetDef text(String template, String color) {
+        return new PdaText(template, color, 0, 1);
+    }
+
+    /** One line in a box {@code width} units wide. */
+    public static WidgetDef fit(String template, String color, float width) {
+        return new PdaText(template, color, width, 1);
+    }
+
+    /** Up to {@code lines} lines in a box {@code width} wide, wrapped at words. */
+    public static WidgetDef wrap(String template, String color, float width, int lines) {
+        return new PdaText(template, color, width, lines);
+    }
 
     public static WidgetDef button(String label, Runnable run) {
         return button(label, "true", run);

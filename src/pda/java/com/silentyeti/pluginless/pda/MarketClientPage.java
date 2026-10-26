@@ -20,7 +20,9 @@ import static com.silentyeti.pluginless.pda.PdaWidgets.chip;
 import static com.wf.wflib.ui.Ui.list;
 import static com.wf.wflib.ui.Ui.row;
 import static com.wf.wflib.ui.Ui.stack;
-import static com.wf.wflib.ui.Ui.text;
+import static com.silentyeti.pluginless.pda.PdaWidgets.fit;
+import static com.silentyeti.pluginless.pda.PdaWidgets.wrap;
+import static com.silentyeti.pluginless.pda.PdaWidgets.text;
 import static com.wf.wflib.ui.Ui.when;
 
 /**
@@ -58,9 +60,8 @@ final class MarketClientPage implements PdaClientPage {
 
     private static String asset() { return PdaClientState.text(view(), "asset"); }
 
-    private static String name(String id, int max) {
-        var plain = id.substring(id.indexOf(':') + 1).replace('_', ' ').replace('/', ' ').toUpperCase();
-        return plain.length() <= max ? plain : plain.substring(0, max - 1) + ".";
+    private static String name(String id) {
+        return id.substring(id.indexOf(':') + 1).replace('_', ' ').replace('/', ' ').toUpperCase();
     }
 
     private static String money(long cents) { return PdaClientState.money(view(), cents); }
@@ -85,39 +86,39 @@ final class MarketClientPage implements PdaClientPage {
         });
         Signals.bool(MKT, "tab_items", m -> !ordersTab);
         Signals.bool(MKT, "tab_orders", m -> ordersTab);
-        Signals.text(MKT, "orders_label", 12, m -> "ORDERS " + array("orders").size());
+        Signals.text(MKT, "orders_label", PdaWidgets.TEXT_MAX, m -> "ORDERS " + array("orders").size());
         Signals.items(MKT, "items", m -> items(), ITEM);
         Signals.items(MKT, "orders", m -> orders(), ORDER);
         Signals.items(MKT, "asks", m -> levels("asks"), LEVEL);
         Signals.items(MKT, "bids", m -> levels("bids"), LEVEL);
-        Signals.text(MKT, "title", 28, m -> asset().isEmpty() ? "NO ITEMS" : name(asset(), 28));
-        Signals.text(MKT, "last", 24, m -> {
+        Signals.text(MKT, "title", PdaWidgets.TEXT_MAX, m -> asset().isEmpty() ? "NO ITEMS" : name(asset()));
+        Signals.text(MKT, "last", PdaWidgets.TEXT_MAX, m -> {
             var chart = array("chart");
             return chart.isEmpty() ? "" : "LAST " + money(chart.get(chart.size() - 1).getAsLong());
         });
-        Signals.text(MKT, "qty", 12, m -> "X" + quantity);
+        Signals.text(MKT, "qty", PdaWidgets.TEXT_MAX, m -> "X" + quantity);
         for (int i = 0; i < QUANTITIES.length; i++) {
             long value = QUANTITIES[i];
             Signals.bool(MKT, "q" + i, m -> quantity == value);
         }
-        Signals.text(MKT, "held", 24, m -> "YOU HOLD " + number("held") + "  BOXED " + number("goods"));
-        Signals.text(MKT, "quote", 60, m -> {
+        Signals.text(MKT, "held", PdaWidgets.TEXT_MAX, m -> "YOU HOLD " + number("held") + "  BOXED " + number("goods"));
+        Signals.text(MKT, "quote", PdaWidgets.TEXT_MAX, m -> {
             long buy = number("quoteBuy");
             long sell = number("quoteSell");
             return "NOW: BUY " + (buy > 0 ? "UP TO " + money(buy * quantity) : "NOT ENOUGH") + "  SELL " + (sell > 0 ? "~" + money(sell * quantity) : "NO BUYERS");
         });
-        Signals.text(MKT, "fee", 24, m -> "FEE " + (view().has("fee") ? view().get("fee").getAsDouble() : 0) + "%");
+        Signals.text(MKT, "fee", PdaWidgets.TEXT_MAX, m -> "FEE " + (view().has("fee") ? view().get("fee").getAsDouble() : 0) + "%");
         Signals.bool(MKT, "can_ibuy", m -> number("quoteBuy") > 0);
         Signals.bool(MKT, "can_isell", m -> number("quoteSell") > 0 && number("held") >= quantity);
         Signals.bool(MKT, "can_buy", m -> BAR.amount > 0 && !asset().isEmpty());
         Signals.bool(MKT, "can_sell", m -> BAR.amount > 0 && number("held") >= quantity);
         Signals.bool(MKT, "can_collect", m -> number("goods") > 0);
         Signals.bool(MKT, "can_cancel", m -> selectedOrder > 0);
-        Signals.text(ITEM, "label", 40, Item::label);
+        Signals.text(ITEM, "label", PdaWidgets.TEXT_MAX, Item::label);
         Signals.bool(ITEM, "selected", Item::selected);
-        Signals.text(ORDER, "label", 56, Order::label);
+        Signals.text(ORDER, "label", PdaWidgets.TEXT_MAX, Order::label);
         Signals.bool(ORDER, "selected", Order::selected);
-        Signals.text(LEVEL, "label", 24, Level::label);
+        Signals.text(LEVEL, "label", PdaWidgets.TEXT_MAX, Level::label);
     }
 
     private static List<Item> items() {
@@ -126,7 +127,7 @@ final class MarketClientPage implements PdaClientPage {
             var row = element.getAsJsonObject();
             var id = PdaClientState.text(row, "id");
             long last = PdaClientState.number(row, "last");
-            result.add(new Item(id, name(id, 14) + (last > 0 ? "  " + money(last) : ""), id.equals(asset())));
+            result.add(new Item(id, name(id) + (last > 0 ? "  " + money(last) : ""), id.equals(asset())));
         }
         return result;
     }
@@ -137,7 +138,7 @@ final class MarketClientPage implements PdaClientPage {
             var row = element.getAsJsonObject();
             long id = PdaClientState.number(row, "id");
             result.add(new Order(id, (row.get("buy").getAsBoolean() ? "BUY " : "SELL ") + PdaClientState.number(row, "remaining") + " "
-                    + name(PdaClientState.text(row, "asset"), 9) + " @" + money(PdaClientState.number(row, "price")), id == selectedOrder));
+                    + name(PdaClientState.text(row, "asset")) + " @" + money(PdaClientState.number(row, "price")), id == selectedOrder));
         }
         return result;
     }
@@ -180,7 +181,7 @@ final class MarketClientPage implements PdaClientPage {
                         })),
                         at(54, 154, button("COLLECT", "pda_pl_mkt.can_collect", () -> PdaClientSetup.send("market", "collect"))))));
 
-        tree.add(at(146, 4, text("{pda_pl_mkt.title}", PdaShell.ACCENT)));
+        tree.add(at(146, 4, fit("{pda_pl_mkt.title}", PdaShell.ACCENT, 110)));
         tree.add(at(260, 4, text("{pda_pl_mkt.last}", PdaShell.TEXT)));
         tree.add(at(146, 16, new PriceChart(230, 44, () -> array("chart"), () -> extreme(true), () -> extreme(false))));
         tree.add(at(146, 64, text("SELL ORDERS", PdaShell.DIM)));

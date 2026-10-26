@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import static com.wf.wflib.ui.Ui.*;
+import static com.silentyeti.pluginless.pda.PdaWidgets.text;
 
 /** Drafts are local previews; only a server snapshot or action result confirms a change. */
 final class CosmeticsClientPage implements PdaClientPage {
@@ -58,30 +59,30 @@ final class CosmeticsClientPage implements PdaClientPage {
 
     public void signals() {
         Signals.num(PlApp.APP, "cos_tab", app -> tab);
-        Signals.text(PlApp.APP, "cos_lock", 64, app -> {
+        Signals.text(PlApp.APP, "cos_lock", PdaWidgets.TEXT_MAX, app -> {
             if (tab == 4) return "SKULL: " + (allowed("skull") ? "unlocked" : "rank/grant required")
                     + " | HAT: " + (allowed("hat") ? "unlocked" : "rank/grant required");
             if (tab == 3) return "Titles unlock through your rank or an individual grant.";
             String perk = PERKS[tab];
             return allowed(perk) ? "Preview changes, then apply." : "LOCKED: requires rank perk or grant: " + perk;
         });
-        Signals.text(PlApp.APP, "cos_color", 40, app -> value("color", color).isEmpty() ? "RANK DEFAULT" : value("color", color));
-        Signals.text(PlApp.APP, "cos_from", 12, app -> from);
-        Signals.text(PlApp.APP, "cos_to", 12, app -> to);
-        Signals.text(PlApp.APP, "cos_nick", 64, app -> value("nick", nick).isEmpty() ? "USE REAL NAME" : value("nick", nick));
-        Signals.text(PlApp.APP, "cos_price", 40, app -> "GET MY SKULL  " + PdaClientState.money(view(), PdaClientState.number(view(), "skull_price")));
-        Signals.text(PlApp.APP, "cos_hat", 64, app -> selectedSlot < 0 ? "Choose an inventory slot to wear as a hat." :
+        Signals.text(PlApp.APP, "cos_color", PdaWidgets.TEXT_MAX, app -> value("color", color).isEmpty() ? "RANK DEFAULT" : value("color", color));
+        Signals.text(PlApp.APP, "cos_from", PdaWidgets.TEXT_MAX, app -> from);
+        Signals.text(PlApp.APP, "cos_to", PdaWidgets.TEXT_MAX, app -> to);
+        Signals.text(PlApp.APP, "cos_nick", PdaWidgets.TEXT_MAX, app -> value("nick", nick).isEmpty() ? "USE REAL NAME" : value("nick", nick));
+        Signals.text(PlApp.APP, "cos_price", PdaWidgets.TEXT_MAX, app -> "GET MY SKULL  " + PdaClientState.money(view(), PdaClientState.number(view(), "skull_price")));
+        Signals.text(PlApp.APP, "cos_hat", PdaWidgets.TEXT_MAX, app -> selectedSlot < 0 ? "Choose an inventory slot to wear as a hat." :
                 slots().stream().filter(s -> s.index == selectedSlot).map(s -> "Slot " + (s.index + 1) + ": " + s.name + " x" + s.count).findFirst().orElse("Choose a slot."));
         for (var perk : List.of("namecolor", "namegradient", "nick", "skull", "hat"))
             Signals.bool(PlApp.APP, "cos_" + perk + "_allowed", app -> allowed(perk));
         Signals.bool(PlApp.APP, "cos_wear", app -> allowed("hat") && view().has("head_empty") && view().get("head_empty").getAsBoolean()
                 && slots().stream().anyMatch(s -> s.index == selectedSlot && s.count > 0));
         Signals.bool(PlApp.APP, "cos_title_apply", app -> titles().stream().anyMatch(t -> t.key.equals(value("title", title)) && t.allowed));
-        Signals.text(PlApp.APP, "cos_title_selected", 40, app -> "SELECTED: " + titles().stream().filter(t -> t.key.equals(value("title", title))).map(Title::label).findFirst().orElse("NONE"));
+        Signals.text(PlApp.APP, "cos_title_selected", PdaWidgets.TEXT_MAX, app -> "SELECTED: " + titles().stream().filter(t -> t.key.equals(value("title", title))).map(Title::label).findFirst().orElse("NONE"));
         Signals.items(PlApp.APP, "cos_titles", app -> titles(), TITLE);
-        Signals.text(TITLE, "label", 48, t -> t.label + (t.allowed ? "" : " [rank/grant required]"));
+        Signals.text(TITLE, "label", PdaWidgets.TEXT_MAX, t -> t.label + (t.allowed ? "" : " [rank/grant required]"));
         Signals.items(PlApp.APP, "cos_slots", app -> slots(), SLOT);
-        Signals.text(SLOT, "label", 24, s -> (s.index + 1) + ":" + (s.count == 0 ? "-" : s.name));
+        Signals.text(SLOT, "label", PdaWidgets.TEXT_MAX, s -> (s.index + 1) + ":" + (s.count == 0 ? "-" : s.name));
         Signals.bool(SLOT, "filled", s -> s.count > 0);
     }
 

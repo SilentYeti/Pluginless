@@ -11,7 +11,7 @@ import java.util.List;
 import static com.silentyeti.pluginless.pda.PdaWidgets.at;
 import static com.silentyeti.pluginless.pda.PdaWidgets.button;
 import static com.silentyeti.pluginless.pda.PdaWidgets.chip;
-import static com.wf.wflib.ui.Ui.text;
+import static com.silentyeti.pluginless.pda.PdaWidgets.text;
 import static com.wf.wflib.ui.Ui.row;
 
 /** A whole-number quantity (shares, items): {@code -} count {@code +} and preset chips that set it. */
@@ -28,7 +28,7 @@ final class CountBar {
     }
 
     <S> void signals(Subject<S> on) {
-        Signals.text(on, "count", 12, s -> "X" + count);
+        Signals.text(on, "count", PdaWidgets.TEXT_MAX, s -> "X" + count);
         for (int i = 0; i < presets.length; i++) {
             long value = presets[i];
             Signals.bool(on, "preset" + i, s -> count == value);
