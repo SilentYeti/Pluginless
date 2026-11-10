@@ -104,6 +104,23 @@ public final class Config {
     static double marginLiquidate() { return MARGIN_LIQUIDATE.get(); }
     static double loanDailyInterest() { return LOAN_INTEREST.get(); }
 
+    private static final ModConfigSpec.DoubleValue SOLDIER_HIRE = BUILDER
+            .comment("WFLib soldiers: price of hiring one from the PDA, a barracks or a garrison (0 for free), before the role table below")
+            .defineInRange("soldierHirePrice", 500.0, 0.0, 1e9);
+    private static final ModConfigSpec.DoubleValue SOLDIER_WAGE = BUILDER
+            .comment("WFLib soldiers: what each soldier costs its owner per in-game day, before the role table below")
+            .defineInRange("soldierDailyWage", 50.0, 0.0, 1e9);
+    private static final ModConfigSpec.BooleanValue SOLDIER_UPKEEP = BUILDER
+            .comment("Collect the daily wage. A soldier whose wage cannot be paid leaves, or turns hostile by WFLib's own chance (wflib-recruiting.toml)")
+            .define("soldierUpkeep", true);
+    private static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> SOLDIER_ROLES = BUILDER
+            .comment("WFLib soldiers: price multiplier per role, as role=multiplier; roles are rifle, grenadier, medic, mg, sniper, heavy, assault. Others cost x1")
+            .defineListAllowEmpty("soldierRolePrices", java.util.List.of("heavy=3", "sniper=2", "mg=1.5", "medic=1.5", "grenadier=1.25"), () -> "rifle=1", o -> o instanceof String);
+    static double soldierHire() { return SOLDIER_HIRE.get(); }
+    static double soldierWage() { return SOLDIER_WAGE.get(); }
+    static boolean soldierUpkeep() { return SOLDIER_UPKEEP.get(); }
+    static java.util.List<String> soldierRoles() { return new java.util.ArrayList<String>(SOLDIER_ROLES.get()); }
+
     static final ModConfigSpec SPEC = BUILDER.build();
 
     static long startBalanceCents() {

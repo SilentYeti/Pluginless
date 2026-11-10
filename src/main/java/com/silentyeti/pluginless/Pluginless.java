@@ -81,6 +81,8 @@ public final class Pluginless {
         PdaHub.register(new QolPage());
         //? if <26.1 {
         com.silentyeti.pluginless.pda.PdaNet.register(modBus);
+        // WFLib's soldier recruiting prices itself in Pluginless money when both mods are there
+        if (net.neoforged.fml.ModList.get().isLoaded("wflib")) SoldierEconomy.init();
         //?}
 
         modBus.addListener((BuildCreativeModeTabContentsEvent event) -> {
